@@ -90,13 +90,23 @@ const WhatsAppModule = () => {
     startNewConversation(patient.tel_movil, `${patient.nombre} ${patient.apellidos}`);
   };
 
-  const startManualConversation = () => {
-    if (!manualPhone.trim()) {
-      alert('Por favor ingresa un número de teléfono');
-      return;
+  const addContactToPatients = async (contact) => {
+    try {
+      const response = await axios.post(`${API}/patients`, {
+        nombre: contact.contact.split(' ')[0] || 'Nombre',
+        apellidos: contact.contact.split(' ').slice(1).join(' ') || 'Apellido',
+        tel_movil: contact.phone,
+        email: '',
+        notas: `Agregado desde WhatsApp el ${new Date().toLocaleDateString()}`
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      alert(`${contact.contact} ha sido agregado a la lista de pacientes`);
+    } catch (error) {
+      console.error('Error adding contact to patients:', error);
+      alert('Error al agregar el contacto a pacientes');
     }
-    const name = manualName.trim() || manualPhone;
-    startNewConversation(manualPhone, name);
   };
 
   const scrollToBottom = () => {
