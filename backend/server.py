@@ -792,6 +792,31 @@ async def get_whatsapp_qr(current_user: dict = Depends(get_current_user)):
     from services.whatsapp_service import whatsapp_service
     return await whatsapp_service.get_qr_code()
 
+@api_router.put("/whatsapp/messages/tag")
+async def update_message_tags(
+    tag_data: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    """Update message tags for a phone number"""
+    try:
+        phone_number = tag_data.get("phone_number")
+        tag_color = tag_data.get("tag_color")
+        urgency_level = tag_data.get("urgency_level", 1)
+        
+        # Update all messages for this phone number
+        await db.whatsapp_messages.update_many(
+            {"phone_number": phone_number},
+            {"$set": {
+                "tag_color": tag_color,
+                "urgency_level": urgency_level
+            }}
+        )
+        
+        return {"status": "success", "message": "Messages tagged successfully"}
+    except Exception as e:
+        logger.error(f"Error tagging messages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error tagging messages")
+
 @api_router.post("/whatsapp/messages")
 async def create_whatsapp_message(
     message_data: Dict[str, Any],
