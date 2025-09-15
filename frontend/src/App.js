@@ -700,17 +700,11 @@ const Patients = () => {
   );
 };
 
+// Import AgendaModule
+import AgendaModule from './components/AgendaModule';
+
 // Placeholder components for other modules
-const Agenda = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Calendar className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Agenda</h2>
-      <p className="text-gray-600 mb-4">Gestión de citas conectada con Google Sheets</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
+const Agenda = () => <AgendaModule />;
 
 const WhatsApp = () => (
   <div className="p-6">
