@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import WhatsAppConnection from './WhatsAppConnection';
+import WhatsAppConfig from './WhatsAppConfig';
 import { 
   MessageCircle, Send, Phone, Clock, User, Search, 
   Paperclip, Smile, MoreVertical, Settings, Tag,
