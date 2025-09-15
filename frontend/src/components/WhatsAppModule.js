@@ -337,7 +337,28 @@ const WhatsAppModule = () => {
         </div>
       </div>
 
+      {/* Connection Dialog */}
+      {showConnectionDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Conectar WhatsApp</h2>
+              <button
+                onClick={() => setShowConnectionDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <WhatsAppConnection onConnectionChange={handleConnectionChange} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* WhatsApp Interface */}
+      {connectionStatus === 'connected' ? (
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" style={{ height: '600px' }}>
         <div className="flex h-full">
           {/* Conversations Sidebar */}
