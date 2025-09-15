@@ -645,6 +645,13 @@ const WhatsAppModule = () => {
                       >
                         <Circle className="w-4 h-4 fill-current" />
                       </button>
+                      <button
+                        onClick={() => addContactToPatients(selectedChat)}
+                        className="p-2 text-purple-500 hover:bg-purple-50 rounded-lg"
+                        title="Agregar a pacientes"
+                      >
+                        <User className="w-4 h-4" />
+                      </button>
                       <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg">
                         <MoreVertical className="w-4 h-4" />
                       </button>
