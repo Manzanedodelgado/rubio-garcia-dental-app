@@ -29,6 +29,7 @@ const WhatsAppModule = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [manualPhone, setManualPhone] = useState('');
   const [manualName, setManualName] = useState('');
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
