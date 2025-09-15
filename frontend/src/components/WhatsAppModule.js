@@ -52,7 +52,39 @@ const WhatsAppModule = () => {
 
   const fetchConversations = async () => {
     try {
-      // Mock data for demo
+      const response = await axios.get(`${API}/whatsapp/messages`);
+      
+      // Group messages by contact to create conversations
+      const messagesData = response.data;
+      const conversationsMap = new Map();
+      
+      messagesData.forEach(msg => {
+        const key = msg.phone_number;
+        if (!conversationsMap.has(key)) {
+          conversationsMap.set(key, {
+            id: key,
+            contact: msg.contact_name || msg.phone_number,
+            phone: msg.phone_number,
+            lastMessage: msg.message,
+            timestamp: new Date(msg.timestamp),
+            unread: msg.message_type === 'incoming' && msg.status !== 'read',
+            tag: msg.tag_color === 'red' ? 'red' : msg.tag_color === 'blue' ? 'blue' : 'green',
+            urgency: msg.urgency_level || 1
+          });
+        } else {
+          const conv = conversationsMap.get(key);
+          if (new Date(msg.timestamp) > conv.timestamp) {
+            conv.lastMessage = msg.message;
+            conv.timestamp = new Date(msg.timestamp);
+            conv.unread = msg.message_type === 'incoming' && msg.status !== 'read';
+          }
+        }
+      });
+      
+      setConversations(Array.from(conversationsMap.values()));
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      // Fallback to mock data if real API fails
       const mockConversations = [
         {
           id: '1',
@@ -73,21 +105,9 @@ const WhatsAppModule = () => {
           unread: true,
           tag: 'red',
           urgency: 9
-        },
-        {
-          id: '3',
-          contact: 'Ana Fernández',
-          phone: '664345678',
-          lastMessage: 'Gracias por la información',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          unread: false,
-          tag: 'green',
-          urgency: 1
         }
       ];
       setConversations(mockConversations);
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
     } finally {
       setLoading(false);
     }
