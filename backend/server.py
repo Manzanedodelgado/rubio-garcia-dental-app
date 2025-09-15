@@ -781,6 +781,36 @@ async def create_user(user_data: Dict[str, Any], current_user: dict = Depends(ge
     await db.users.insert_one(user_dict)
     return user
 
+# Google Sheets Routes
+@api_router.get("/google-sheets/appointments")
+async def get_google_sheets_appointments(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    from services.google_sheets_service import google_sheets_service
+    if date_filter:
+        appointments = await google_sheets_service.get_appointments_by_date(date_filter)
+    else:
+        appointments = await google_sheets_service.get_all_appointments()
+    return appointments
+
+@api_router.post("/google-sheets/sync")
+async def sync_google_sheets(current_user: dict = Depends(get_current_user)):
+    from services.google_sheets_service import google_sheets_service
+    result = await google_sheets_service.sync_appointments()
+    return result
+
+@api_router.post("/google-sheets/appointments")
+async def create_google_sheets_appointment(appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
+    from services.google_sheets_service import google_sheets_service
+    appointment_dict = appointment.dict()
+    result = await google_sheets_service.create_appointment(appointment_dict)
+    return result
+
+@api_router.put("/google-sheets/appointments/{appointment_id}")
+async def update_google_sheets_appointment(appointment_id: str, appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
+    from services.google_sheets_service import google_sheets_service
+    appointment_dict = appointment.dict()
+    result = await google_sheets_service.update_appointment(appointment_id, appointment_dict)
+    return result
+
 # Include router
 app.include_router(api_router)
 
