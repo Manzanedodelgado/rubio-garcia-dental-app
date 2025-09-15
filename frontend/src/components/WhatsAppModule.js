@@ -22,7 +22,11 @@ const WhatsAppModule = () => {
   const [connectedUser, setConnectedUser] = useState(null);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [patientInfo, setPatientInfo] = useState(null);
-  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [patients, setPatients] = useState([]);
+  const [patientSearch, setPatientSearch] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualName, setManualName] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
