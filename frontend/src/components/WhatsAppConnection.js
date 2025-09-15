@@ -17,6 +17,7 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
   const [connectedUser, setConnectedUser] = useState(null);
   const [qrExpiry, setQrExpiry] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     fetchConnectionStatus();
@@ -29,6 +30,30 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       onConnectionChange(connectionStatus, connectedUser);
     }
   }, [connectionStatus, connectedUser, onConnectionChange]);
+
+  // Generate QR code on canvas when qrCode changes
+  useEffect(() => {
+    if (qrCode && canvasRef.current) {
+      generateQRCode(qrCode);
+    }
+  }, [qrCode]);
+
+  const generateQRCode = async (data) => {
+    try {
+      const QRCode = await import('qrcode');
+      const canvas = canvasRef.current;
+      await QRCode.toCanvas(canvas, data, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    }
+  };
 
   // Timer for QR expiry
   useEffect(() => {
