@@ -393,10 +393,32 @@ const WhatsAppModule = () => {
     }
   };
 
-  const tagMessage = (chatId, tag, urgency) => {
-    setConversations(conversations.map(c => 
-      c.id === chatId ? { ...c, tag, urgency } : c
-    ));
+  const tagMessage = async (chatId, tag, urgency) => {
+    try {
+      // Update local state
+      setConversations(conversations.map(c => 
+        c.id === chatId ? { ...c, tag, urgency } : c
+      ));
+
+      // Update in backend
+      const conversation = conversations.find(c => c.id === chatId);
+      if (conversation) {
+        await axios.put(`${API}/whatsapp/messages/tag`, {
+          phone_number: conversation.phone,
+          tag_color: tag,
+          urgency_level: urgency
+        }, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+
+        if (tag === 'red' && urgency >= 7) {
+          // Show confirmation for urgent message
+          alert(`Conversación marcada como URGENTE. Se notificará en el Panel de Control.`);
+        }
+      }
+    } catch (error) {
+      console.error('Error tagging message:', error);
+    }
   };
 
   const getTagColor = (tag) => {
