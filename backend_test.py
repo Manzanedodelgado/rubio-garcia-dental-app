@@ -246,6 +246,223 @@ class DenAppAPITester:
             print(f"   Found {len(response)} WhatsApp messages")
         return success
 
+    def test_whatsapp_node_service_health(self):
+        """Test WhatsApp Node.js service health endpoint"""
+        try:
+            response = requests.get("http://localhost:3001/health", timeout=10)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                print(f"✅ WhatsApp Service Health - Status: {data.get('status')}")
+                print(f"   Service: {data.get('service')}")
+                print(f"   Uptime: {data.get('uptime'):.2f}s")
+                print(f"   WhatsApp Status: {data.get('whatsapp_status')}")
+                self.tests_passed += 1
+            else:
+                print(f"❌ WhatsApp Service Health - Status: {response.status_code}")
+            self.tests_run += 1
+            return success
+        except Exception as e:
+            print(f"❌ WhatsApp Service Health - Error: {str(e)}")
+            self.tests_run += 1
+            return False
+
+    def test_whatsapp_node_service_status(self):
+        """Test WhatsApp Node.js service status endpoint"""
+        try:
+            response = requests.get("http://localhost:3001/status", timeout=10)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                print(f"✅ WhatsApp Service Status - Connection: {data.get('status')}")
+                print(f"   Connected: {data.get('connected')}")
+                if data.get('user'):
+                    print(f"   User: {data.get('user')}")
+                if data.get('phone'):
+                    print(f"   Phone: {data.get('phone')}")
+                self.tests_passed += 1
+            else:
+                print(f"❌ WhatsApp Service Status - Status: {response.status_code}")
+            self.tests_run += 1
+            return success
+        except Exception as e:
+            print(f"❌ WhatsApp Service Status - Error: {str(e)}")
+            self.tests_run += 1
+            return False
+
+    def test_whatsapp_node_service_qr(self):
+        """Test WhatsApp Node.js service QR endpoint"""
+        try:
+            response = requests.get("http://localhost:3001/qr", timeout=10)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                print(f"✅ WhatsApp Service QR - Status: {data.get('status')}")
+                if data.get('qr'):
+                    print(f"   QR Code: Available (length: {len(data.get('qr'))})")
+                    if data.get('expires_at'):
+                        print(f"   Expires at: {data.get('expires_at')}")
+                else:
+                    print(f"   QR Code: Not available")
+                self.tests_passed += 1
+            else:
+                print(f"❌ WhatsApp Service QR - Status: {response.status_code}")
+            self.tests_run += 1
+            return success
+        except Exception as e:
+            print(f"❌ WhatsApp Service QR - Error: {str(e)}")
+            self.tests_run += 1
+            return False
+
+    def test_whatsapp_backend_status(self):
+        """Test WhatsApp backend integration status"""
+        success, response = self.run_test(
+            "WhatsApp Backend Status",
+            "GET",
+            "whatsapp/status",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Backend Status: {response.get('status')}")
+            print(f"   Connected: {response.get('connected')}")
+            if response.get('user'):
+                print(f"   User: {response.get('user')}")
+        return success
+
+    def test_whatsapp_backend_qr(self):
+        """Test WhatsApp backend integration QR"""
+        success, response = self.run_test(
+            "WhatsApp Backend QR",
+            "GET",
+            "whatsapp/qr",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            if response.get('qr'):
+                print(f"   QR Code: Available via backend")
+            else:
+                print(f"   QR Code: Not available via backend")
+        return success
+
+    def test_whatsapp_send_message(self):
+        """Test sending WhatsApp message via backend"""
+        test_phone = "664123456"
+        test_message = "Hola, este es un mensaje de prueba desde DenApp Control"
+        
+        success, response = self.run_test(
+            "WhatsApp Send Message",
+            "POST",
+            "whatsapp/send-real",
+            200,
+            data={
+                "phone_number": test_phone,
+                "message": test_message
+            },
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Message sent to {test_phone}")
+            print(f"   Response: {response}")
+        return success
+
+    def test_whatsapp_send_bulk_messages(self):
+        """Test sending bulk WhatsApp messages via backend"""
+        test_recipients = [
+            {"phone_number": "664123456", "name": "Test User 1"},
+            {"phone_number": "664123457", "name": "Test User 2"}
+        ]
+        test_message = "Mensaje masivo de prueba desde DenApp Control"
+        
+        success, response = self.run_test(
+            "WhatsApp Send Bulk Messages",
+            "POST",
+            "whatsapp/send-bulk-real",
+            200,
+            data={
+                "recipients": test_recipients,
+                "message": test_message
+            },
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Bulk message sent to {len(test_recipients)} recipients")
+            print(f"   Response: {response}")
+        return success
+
+    def test_whatsapp_node_send_direct(self):
+        """Test sending message directly to Node.js service"""
+        test_phone = "664123456"
+        test_message = "Mensaje directo al servicio Node.js de WhatsApp"
+        
+        try:
+            response = requests.post(
+                "http://localhost:3001/send",
+                json={
+                    "phone_number": test_phone,
+                    "message": test_message
+                },
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                print(f"✅ WhatsApp Direct Send - Success: {data.get('success')}")
+                if not data.get('success'):
+                    print(f"   Error: {data.get('error')}")
+                self.tests_passed += 1
+            else:
+                print(f"❌ WhatsApp Direct Send - Status: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data.get('error')}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+            self.tests_run += 1
+            return success
+        except Exception as e:
+            print(f"❌ WhatsApp Direct Send - Error: {str(e)}")
+            self.tests_run += 1
+            return False
+
+    def test_whatsapp_node_send_bulk_direct(self):
+        """Test sending bulk messages directly to Node.js service"""
+        test_recipients = [
+            {"phone_number": "664123456", "name": "Test User 1"},
+            {"phone_number": "664123457", "name": "Test User 2"}
+        ]
+        test_message = "Mensaje masivo directo al servicio Node.js"
+        
+        try:
+            response = requests.post(
+                "http://localhost:3001/send-bulk",
+                json={
+                    "recipients": test_recipients,
+                    "message": test_message
+                },
+                timeout=30
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                print(f"✅ WhatsApp Direct Bulk Send - Success: {data.get('success')}")
+                print(f"   Total: {data.get('total')}, Sent: {data.get('sent')}, Failed: {data.get('failed')}")
+                self.tests_passed += 1
+            else:
+                print(f"❌ WhatsApp Direct Bulk Send - Status: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error: {error_data.get('error')}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+            self.tests_run += 1
+            return success
+        except Exception as e:
+            print(f"❌ WhatsApp Direct Bulk Send - Error: {str(e)}")
+            self.tests_run += 1
+            return False
+
     def test_unauthorized_access(self):
         """Test accessing protected endpoint without token"""
         success, _ = self.run_test(
