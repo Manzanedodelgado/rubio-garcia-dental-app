@@ -188,13 +188,22 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus:
+    - "WhatsApp Connection Component"
+    - "WhatsApp Module Update"
+    - "WhatsApp Backend Integration"
+  stuck_tasks:
+    - "WhatsApp Connection Component"
+    - "WhatsApp Module Update"
   test_all: false
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
     message: "WhatsApp integration implemented: Node.js service running on port 3001, backend integration completed, frontend components created with real QR code display. Ready for comprehensive testing of the complete WhatsApp integration flow."
   - agent: "testing"
     message: "WHATSAPP INTEGRATION TESTING COMPLETED SUCCESSFULLY ✅ Comprehensive testing performed on all WhatsApp components: 1) Node.js Service (port 3001): All endpoints working (/health, /status, /qr, /send, /send-bulk) - Service connected to WhatsApp as 34664218253. 2) Backend Integration: All FastAPI routes working (/api/whatsapp/*) with proper proxy to Node.js service. 3) Service Communication: Python service layer successfully communicating with Node.js. 4) Webhooks: All webhook endpoints tested and working (message-received with AI responses, qr-updated, connected). 5) Message Flow: Successfully tested individual and bulk message sending. The complete WhatsApp integration is fully operational and ready for production use."
+  - agent: "user"
+    message: "CRITICAL BUGS REPORTED: 1) Se desconecta cuando cambias de pestaña, 2) No permite buscar contacto en Pacientes para iniciar conversación ni añadir numero de forma manual, 3) No envía mensajes, 4) No guarda historial de conversacion, 5) No permite agregar a contacto de Pacientes desde una conversacion de WhatsApp, 6) Se ha aplicado la IA a pesar de estar desconectada, 7) La rueda de configurar no tiene ningún función, 8) No permite editar la información que ve el paciente de nuestro perfil de WhatsApp ni la imagen"
+  - agent: "main"
+    message: "Starting systematic investigation and fixes for all reported WhatsApp issues. Priority: Fix connection stability, message sending, contact integration, conversation history, and configuration features."
