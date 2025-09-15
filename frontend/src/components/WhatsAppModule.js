@@ -114,10 +114,27 @@ const WhatsAppModule = () => {
   };
 
   const fetchMessages = async (chatId = null) => {
-    if (!chatId && !selectedChat) return;
+    const targetChatId = chatId || selectedChat?.id;
+    if (!targetChatId) return;
     
     try {
-      // Mock messages for demo
+      // Fetch messages for specific contact from backend
+      const response = await axios.get(`${API}/whatsapp/messages?contact_id=${targetChatId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const messagesData = response.data.map(msg => ({
+        id: msg.id,
+        message: msg.message,
+        timestamp: new Date(msg.timestamp),
+        type: msg.message_type === 'incoming' ? 'incoming' : 'outgoing',
+        status: msg.status || 'sent'
+      }));
+      
+      setMessages(messagesData);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      // Fallback to mock messages if real API fails
       const mockMessages = [
         {
           id: '1',
@@ -149,8 +166,6 @@ const WhatsAppModule = () => {
         }
       ];
       setMessages(mockMessages);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
     }
   };
 
