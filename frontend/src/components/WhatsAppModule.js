@@ -51,6 +51,54 @@ const WhatsAppModule = () => {
     }
   };
 
+  const fetchPatients = async () => {
+    try {
+      const response = await axios.get(`${API}/patients`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setPatients(response.data);
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+    }
+  };
+
+  const startNewConversation = async (phone, name) => {
+    const newChat = {
+      id: phone,
+      contact: name,
+      phone: phone,
+      lastMessage: 'Nueva conversación iniciada',
+      timestamp: new Date(),
+      unread: false,
+      tag: 'blue',
+      urgency: 1
+    };
+
+    setConversations([newChat, ...conversations]);
+    selectChat(newChat);
+    setShowNewChatDialog(false);
+    setManualPhone('');
+    setManualName('');
+    setPatientSearch('');
+  };
+
+  const startConversationWithPatient = (patient) => {
+    if (!patient.tel_movil) {
+      alert('Este paciente no tiene número de teléfono registrado');
+      return;
+    }
+    startNewConversation(patient.tel_movil, `${patient.nombre} ${patient.apellidos}`);
+  };
+
+  const startManualConversation = () => {
+    if (!manualPhone.trim()) {
+      alert('Por favor ingresa un número de teléfono');
+      return;
+    }
+    const name = manualName.trim() || manualPhone;
+    startNewConversation(manualPhone, name);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
