@@ -45,8 +45,18 @@ const WhatsAppModule = () => {
     fetchConversations();
     if (connectionStatus === 'connected') {
       fetchMessages();
+      
+      // Start polling for new messages when connected
+      const messageInterval = setInterval(() => {
+        if (selectedChat) {
+          fetchMessages();
+        }
+        fetchConversations();
+      }, 10000); // Check for new messages every 10 seconds
+      
+      return () => clearInterval(messageInterval);
     }
-  }, [connectionStatus]);
+  }, [connectionStatus, selectedChat]);
 
   useEffect(() => {
     scrollToBottom();
