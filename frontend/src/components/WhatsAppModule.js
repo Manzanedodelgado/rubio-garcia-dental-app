@@ -291,7 +291,7 @@ const WhatsAppModule = () => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
 
-    const message = {
+    const tempMessage = {
       id: Date.now().toString(),
       message: newMessage,
       timestamp: new Date(),
@@ -299,37 +299,52 @@ const WhatsAppModule = () => {
       status: 'sending'
     };
 
-    setMessages([...messages, message]);
+    setMessages([...messages, tempMessage]);
+    const messageText = newMessage;
     setNewMessage('');
 
     try {
+      // Send message via backend
       const response = await axios.post(`${API}/whatsapp/send-real`, {
         phone_number: selectedChat.phone,
-        message: newMessage
+        message: messageText
       }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      // Create WhatsApp message in database
+      const messageData = {
+        contact_id: selectedChat.id,
+        contact_name: selectedChat.contact,
+        phone_number: selectedChat.phone,
+        message: messageText,
+        message_type: 'outgoing',
+        status: 'sent'
+      };
+
+      await axios.post(`${API}/whatsapp/messages`, messageData, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
       // Update message status
       setMessages(prev => prev.map(m => 
-        m.id === message.id ? { ...m, status: 'sent' } : m
+        m.id === tempMessage.id ? { ...m, status: 'sent' } : m
       ));
 
       // Update conversation last message
       setConversations(prev => prev.map(c => 
         c.id === selectedChat.id 
-          ? { ...c, lastMessage: newMessage, timestamp: new Date() }
+          ? { ...c, lastMessage: messageText, timestamp: new Date() }
           : c
       ));
 
-      console.log('Message sent successfully:', response.data);
+      console.log('Message sent and saved successfully');
     } catch (error) {
       console.error('Error sending message:', error);
       setMessages(prev => prev.map(m => 
-        m.id === message.id ? { ...m, status: 'error' } : m
+        m.id === tempMessage.id ? { ...m, status: 'error' } : m
       ));
       
-      // Show error to user
       alert('Error al enviar el mensaje. Por favor, verifica la conexión de WhatsApp.');
     }
   };
