@@ -590,6 +590,27 @@ const WhatsAppModule = () => {
           )}
         </div>
       </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" style={{ height: '600px' }}>
+          <div className="flex items-center justify-center h-full bg-gray-50">
+            <div className="text-center">
+              <WifiOff className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                WhatsApp no está conectado
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Conecta tu WhatsApp Business para comenzar a recibir y enviar mensajes
+              </p>
+              <button
+                onClick={() => setShowConnectionDialog(true)}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Conectar WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
