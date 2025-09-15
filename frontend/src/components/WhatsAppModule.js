@@ -405,6 +405,96 @@ const WhatsAppModule = () => {
         </div>
       </div>
 
+      {/* New Chat Dialog */}
+      {showNewChatDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Nueva Conversación</h2>
+              <button
+                onClick={() => setShowNewChatDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-6">
+              {/* Manual Number Input */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Número Manual</h3>
+                <div className="space-y-3">
+                  <input
+                    type="tel"
+                    placeholder="Número de teléfono (ej: 664123456)"
+                    value={manualPhone}
+                    onChange={(e) => setManualPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nombre (opcional)"
+                    value={manualName}
+                    onChange={(e) => setManualName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    onClick={startManualConversation}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Iniciar Conversación
+                  </button>
+                </div>
+              </div>
+
+              {/* Patient Search */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Buscar Paciente</h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre o apellido..."
+                    value={patientSearch}
+                    onChange={(e) => setPatientSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {patients
+                      .filter(patient => 
+                        patient.nombre.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        patient.apellidos.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        patient.tel_movil.includes(patientSearch)
+                      )
+                      .slice(0, 10)
+                      .map(patient => (
+                        <div
+                          key={patient.id}
+                          onClick={() => startConversationWithPatient(patient)}
+                          className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {patient.nombre} {patient.apellidos}
+                              </p>
+                              <p className="text-sm text-gray-600">{patient.tel_movil || 'Sin teléfono'}</p>
+                              <p className="text-xs text-gray-500">#{patient.num_pac}</p>
+                            </div>
+                            {patient.tel_movil && (
+                              <MessageCircle className="w-5 h-5 text-blue-600" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Connection Dialog */}
       {showConnectionDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
