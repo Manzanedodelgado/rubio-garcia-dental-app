@@ -883,18 +883,20 @@ async def handle_whatsapp_message_received(message_data: Dict[str, Any]):
         
         await db.whatsapp_messages.insert_one(whatsapp_message.dict())
         
-        # Process with IA if enabled
+        # Check if AI is enabled before processing
         ai_config = await db.ai_agent_config.find_one({})
         if ai_config and ai_config.get("is_active", False):
-            # Simple AI response logic
+            # Process with IA if enabled
             reply = await process_ai_response(message_text, phone_number)
             return {"reply": reply}
-        
-        return {"reply": None}
+        else:
+            # No AI response when disabled
+            logger.info(f"AI is disabled, no auto-reply for message from {phone_number}")
+            return {"reply": None}
         
     except Exception as e:
         logger.error(f"Error processing WhatsApp message: {str(e)}")
-        return {"reply": "Disculpe, estamos experimentando problemas técnicos."}
+        return {"reply": None}
 
 async def process_ai_response(message: str, phone_number: str) -> str:
     """Process message with AI logic"""
