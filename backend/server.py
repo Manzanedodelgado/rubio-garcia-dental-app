@@ -794,11 +794,16 @@ async def get_whatsapp_qr(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/whatsapp/send-real")
 async def send_real_whatsapp_message(
-    phone_number: str,
-    message: str,
+    message_data: Dict[str, str],
     current_user: dict = Depends(get_current_user)
 ):
     from services.whatsapp_service import whatsapp_service
+    phone_number = message_data.get("phone_number")
+    message = message_data.get("message")
+    
+    if not phone_number or not message:
+        raise HTTPException(status_code=400, detail="phone_number and message are required")
+    
     return await whatsapp_service.send_message(phone_number, message)
 
 @api_router.post("/whatsapp/send-bulk-real")
