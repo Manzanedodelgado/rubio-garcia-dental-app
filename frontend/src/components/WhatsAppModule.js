@@ -245,35 +245,53 @@ const WhatsAppModule = () => {
 
   const fetchPatientInfo = async (phone) => {
     try {
-      // Mock patient info for demo
-      const mockPatientInfo = {
-        name: 'María García López',
-        phone: '664123456',
-        patientNumber: 'PAC0001',
-        lastAppointments: [
-          {
-            date: '2024-12-15',
-            time: '10:00',
-            treatment: 'Limpieza dental',
-            status: 'Completada'
-          },
-          {
-            date: '2024-11-20',
-            time: '16:30',
-            treatment: 'Empaste',
-            status: 'Completada'
-          },
-          {
-            date: '2024-10-25',
-            time: '09:00',
-            treatment: 'Revisión',
-            status: 'Completada'
-          }
-        ]
-      };
-      setPatientInfo(mockPatientInfo);
+      // Search for patient by phone number
+      const patientsResponse = await axios.get(`${API}/patients`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const patient = patientsResponse.data.find(p => p.tel_movil === phone);
+      
+      if (patient) {
+        // Get appointments for this patient
+        const appointmentsResponse = await axios.get(`${API}/appointments`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        const patientAppointments = appointmentsResponse.data
+          .filter(apt => apt.num_pac === patient.num_pac)
+          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+          .slice(0, 5)
+          .map(apt => ({
+            date: apt.fecha,
+            time: apt.hora,
+            treatment: apt.tratamiento,
+            status: apt.estado_cita
+          }));
+
+        setPatientInfo({
+          name: `${patient.nombre} ${patient.apellidos}`,
+          phone: patient.tel_movil,
+          patientNumber: patient.num_pac,
+          lastAppointments: patientAppointments
+        });
+      } else {
+        // No patient found, show basic info
+        setPatientInfo({
+          name: phone,
+          phone: phone,
+          patientNumber: 'No registrado',
+          lastAppointments: []
+        });
+      }
     } catch (error) {
       console.error('Error fetching patient info:', error);
+      setPatientInfo({
+        name: phone,
+        phone: phone,
+        patientNumber: 'Error al cargar',
+        lastAppointments: []
+      });
     }
   };
 
