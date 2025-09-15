@@ -25,9 +25,7 @@ async function initWhatsApp() {
             auth: state,
             printQRInTerminal: false,
             browser: ['DenApp Control', 'Chrome', '1.0.0'],
-            logger: {
-                level: 'silent'
-            }
+            logger: require('pino')({ level: 'silent' })
         })
 
         sock.ev.on('connection.update', async (update) => {
