@@ -781,6 +781,174 @@ async def create_user(user_data: Dict[str, Any], current_user: dict = Depends(ge
     await db.users.insert_one(user_dict)
     return user
 
+# Real WhatsApp Integration Routes
+@api_router.get("/whatsapp/status")
+async def get_whatsapp_status(current_user: dict = Depends(get_current_user)):
+    from services.whatsapp_service import whatsapp_service
+    return await whatsapp_service.get_status()
+
+@api_router.get("/whatsapp/qr")
+async def get_whatsapp_qr(current_user: dict = Depends(get_current_user)):
+    from services.whatsapp_service import whatsapp_service
+    return await whatsapp_service.get_qr_code()
+
+@api_router.post("/whatsapp/send-real")
+async def send_real_whatsapp_message(
+    phone_number: str,
+    message: str,
+    current_user: dict = Depends(get_current_user)
+):
+    from services.whatsapp_service import whatsapp_service
+    return await whatsapp_service.send_message(phone_number, message)
+
+@api_router.post("/whatsapp/send-bulk-real")
+async def send_bulk_whatsapp_messages(
+    request_data: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    from services.whatsapp_service import whatsapp_service
+    recipients = request_data.get("recipients", [])
+    message = request_data.get("message", "")
+    return await whatsapp_service.send_bulk_messages(recipients, message)
+
+@api_router.post("/whatsapp/message-received")
+async def handle_whatsapp_message_received(message_data: Dict[str, Any]):
+    """Handle incoming WhatsApp messages from Baileys service"""
+    try:
+        phone_number = message_data.get("phone_number")
+        contact_name = message_data.get("contact_name", phone_number)
+        message_text = message_data.get("message", "")
+        
+        # Store the incoming message
+        whatsapp_message = WhatsAppMessage(
+            contact_id=phone_number,
+            contact_name=contact_name,
+            phone_number=phone_number,
+            message=message_text,
+            message_type="incoming",
+            status="received"
+        )
+        
+        await db.whatsapp_messages.insert_one(whatsapp_message.dict())
+        
+        # Process with IA if enabled
+        ai_config = await db.ai_agent_config.find_one({})
+        if ai_config and ai_config.get("is_active", False):
+            # Simple AI response logic
+            reply = await process_ai_response(message_text, phone_number)
+            return {"reply": reply}
+        
+        return {"reply": None}
+        
+    except Exception as e:
+        logger.error(f"Error processing WhatsApp message: {str(e)}")
+        return {"reply": "Disculpe, estamos experimentando problemas técnicos."}
+
+async def process_ai_response(message: str, phone_number: str) -> str:
+    """Process message with AI logic"""
+    message_lower = message.lower()
+    
+    # Basic AI responses for dental clinic
+    if any(word in message_lower for word in ['dolor', 'duele', 'molestia']):
+        return """Entiendo que tiene dolor dental. Le recomiendo:
+
+🔴 Si el dolor es intenso (7-10): Contacte urgentemente al 664218253
+🟡 Si es moderado: Puede tomar un analgésico y programar cita
+📅 ¿Desea que le ayude a reservar una cita?
+
+¿Podría calificar su dolor del 1 al 10?"""
+    
+    elif any(word in message_lower for word in ['cita', 'consulta', 'reservar']):
+        return """📅 Estaré encantada de ayudarle con su cita.
+
+Nuestro horario:
+🕘 Lunes a Viernes: 9:00 - 19:00
+📞 Teléfono: 664218253
+📍 Calle Mayor 19, Alcorcón
+
+¿Qué día prefiere para su visita?
+¿Es una consulta de revisión o tiene alguna molestia específica?"""
+    
+    elif any(word in message_lower for word in ['precio', 'coste', 'cuanto']):
+        return """💰 Los precios varían según el tratamiento necesario.
+
+Algunos ejemplos orientativos:
+• Limpieza dental: Desde 60€
+• Empaste: Desde 80€
+• Implante: Consultar presupuesto personalizado
+
+📋 Le proporcionaremos un presupuesto detallado tras la primera consulta.
+📞 ¿Desea programar una cita para valoración?"""
+    
+    elif any(word in message_lower for word in ['hola', 'buenos', 'buenas']):
+        return """¡Hola! Bienvenido/a a Rubio García Dental 🦷
+
+Soy su asistente virtual. Puedo ayudarle con:
+📅 Programar citas
+🔴 Urgencias dentales
+💰 Información sobre tratamientos
+📍 Ubicación y horarios
+
+¿En qué puedo ayudarle hoy?"""
+    
+    else:
+        return """Gracias por contactarnos. 
+
+🦷 Rubio García Dental
+📞 664218253
+📍 Calle Mayor 19, Alcorcón
+🕘 Lunes a Viernes: 9:00-19:00
+
+¿Necesita programar una cita o tiene alguna consulta específica?"""
+
+@api_router.post("/whatsapp/qr-updated")
+async def whatsapp_qr_updated(qr_data: Dict[str, str]):
+    """Receive QR code updates from WhatsApp service"""
+    # This endpoint is called by the WhatsApp service when QR is updated
+    return {"status": "received"}
+
+@api_router.post("/whatsapp/connected")
+async def whatsapp_connected(connection_data: Dict[str, Any]):
+    """Receive connection status from WhatsApp service"""
+    # This endpoint is called by the WhatsApp service when connected
+    logger.info(f"WhatsApp connected: {connection_data}")
+    return {"status": "received"}
+
+# Real Google Sheets Integration Routes
+@api_router.get("/google-sheets/test")
+async def test_google_sheets_connection(current_user: dict = Depends(get_current_user)):
+    from services.real_google_sheets_service import real_google_sheets_service
+    return await real_google_sheets_service.test_connection()
+
+@api_router.get("/google-sheets/appointments-real")
+async def get_real_google_sheets_appointments(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    from services.real_google_sheets_service import real_google_sheets_service
+    if date_filter:
+        appointments = await real_google_sheets_service.get_appointments_by_date(date_filter)
+    else:
+        appointments = await real_google_sheets_service.get_all_appointments()
+    return appointments
+
+@api_router.post("/google-sheets/sync-real")
+async def sync_real_google_sheets(current_user: dict = Depends(get_current_user)):
+    from services.real_google_sheets_service import real_google_sheets_service
+    result = await real_google_sheets_service.sync_appointments()
+    return result
+
+@api_router.post("/google-sheets/appointments-real")
+async def create_real_google_sheets_appointment(appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
+    from services.real_google_sheets_service import real_google_sheets_service
+    appointment_dict = appointment.dict()
+    result = await real_google_sheets_service.create_appointment(appointment_dict)
+    return result
+
+@api_router.put("/google-sheets/appointments-real/{registro}")
+async def update_real_google_sheets_appointment(registro: str, appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
+    from services.real_google_sheets_service import real_google_sheets_service
+    appointment_dict = appointment.dict()
+    result = await real_google_sheets_service.update_appointment(registro, appointment_dict)
+    return result
+
 # Google Sheets Routes
 @api_router.get("/google-sheets/appointments")
 async def get_google_sheets_appointments(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user)):
