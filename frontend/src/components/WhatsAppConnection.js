@@ -20,22 +20,50 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    fetchConnectionStatus();
-    const interval = setInterval(fetchConnectionStatus, 5000); // Check every 5 seconds instead of 3
-    
-    // Handle page visibility change to prevent disconnection
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page became visible again, check connection immediately
-        setTimeout(fetchConnectionStatus, 1000);
+    let intervalId;
+    let visibilityTimeoutId;
+
+    const startPolling = () => {
+      fetchConnectionStatus();
+      intervalId = setInterval(fetchConnectionStatus, 5000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
       }
     };
+
+    // Handle page visibility change
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden, stop polling
+        stopPolling();
+      } else {
+        // Page is visible again, restart polling after a short delay
+        if (visibilityTimeoutId) {
+          clearTimeout(visibilityTimeoutId);
+        }
+        visibilityTimeoutId = setTimeout(() => {
+          console.log('Page visible again, restarting WhatsApp connection check');
+          startPolling();
+        }, 1000);
+      }
+    };
+
+    // Start initial polling
+    startPolling();
     
+    // Add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     return () => {
-      clearInterval(interval);
+      stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (visibilityTimeoutId) {
+        clearTimeout(visibilityTimeoutId);
+      }
     };
   }, []);
 
