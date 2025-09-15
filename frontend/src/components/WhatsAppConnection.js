@@ -190,12 +190,15 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
         {qrCode && connectionStatus === 'connecting' && (
           <div className="text-center">
             <div className="bg-white p-6 rounded-lg border-2 border-dashed border-gray-300 inline-block">
-              <QRCode 
-                value={qrCode} 
-                size={200}
-                level="M"
-                includeMargin={true}
-              />
+              <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-xs font-mono bg-white p-2 rounded border break-all max-w-xs">
+                    {qrCode.substring(0, 50)}...
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">Código QR generado</p>
+                  <p className="text-xs text-gray-500">Escanea con WhatsApp</p>
+                </div>
+              </div>
             </div>
             
             <div className="mt-4 space-y-3">
