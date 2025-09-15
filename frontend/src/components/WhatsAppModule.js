@@ -320,6 +320,16 @@ const WhatsAppModule = () => {
             </button>
           </div>
           
+          {connectionStatus !== 'connected' && (
+            <button 
+              onClick={() => setShowConnectionDialog(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
+            >
+              <Wifi className="w-4 h-4 mr-2" />
+              Conectar WhatsApp
+            </button>
+          )}
+          
           <button className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
             <Settings className="w-4 h-4 mr-2" />
             Configurar
