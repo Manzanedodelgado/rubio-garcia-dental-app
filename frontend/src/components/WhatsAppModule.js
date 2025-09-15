@@ -90,6 +90,15 @@ const WhatsAppModule = () => {
     startNewConversation(patient.tel_movil, `${patient.nombre} ${patient.apellidos}`);
   };
 
+  const startManualConversation = () => {
+    if (!manualPhone.trim()) {
+      alert('Por favor ingresa un número de teléfono');
+      return;
+    }
+    const name = manualName.trim() || manualPhone;
+    startNewConversation(manualPhone, name);
+  };
+
   const addContactToPatients = async (contact) => {
     try {
       const response = await axios.post(`${API}/patients`, {
