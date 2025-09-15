@@ -111,18 +111,35 @@ const WhatsAppModule = () => {
   };
 
   const addContactToPatients = async (contact) => {
+    // Pre-fill form with extracted data
+    const nameParts = contact.contact.split(' ');
+    setContactForm({
+      nombre: nameParts[0] || '',
+      apellidos: nameParts.slice(1).join(' ') || '',
+      tel_movil: contact.phone,
+      email: '',
+      notas: `Agregado desde WhatsApp el ${new Date().toLocaleDateString()}`
+    });
+    setEditingContact(contact);
+    setShowEditContactDialog(true);
+  };
+
+  const saveContactToPatients = async () => {
     try {
-      const response = await axios.post(`${API}/patients`, {
-        nombre: contact.contact.split(' ')[0] || 'Nombre',
-        apellidos: contact.contact.split(' ').slice(1).join(' ') || 'Apellido',
-        tel_movil: contact.phone,
-        email: '',
-        notas: `Agregado desde WhatsApp el ${new Date().toLocaleDateString()}`
-      }, {
+      const response = await axios.post(`${API}/patients`, contactForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
-      alert(`${contact.contact} ha sido agregado a la lista de pacientes`);
+      alert(`${contactForm.nombre} ${contactForm.apellidos} ha sido agregado a la lista de pacientes`);
+      setShowEditContactDialog(false);
+      setEditingContact(null);
+      setContactForm({
+        nombre: '',
+        apellidos: '',
+        tel_movil: '',
+        email: '',
+        notas: ''
+      });
     } catch (error) {
       console.error('Error adding contact to patients:', error);
       alert('Error al agregar el contacto a pacientes');
