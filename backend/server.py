@@ -1,17 +1,23 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, UploadFile, File, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date, time
 from passlib.hash import bcrypt
 import jwt
 import os
 import uuid
 import logging
 from pathlib import Path
+import json
+import csv
+import io
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -30,11 +36,15 @@ app = FastAPI(title="DenApp Control", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
+# Background scheduler for automations
+scheduler = BackgroundScheduler()
+
 # Pydantic Models
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     username: str
     role: str  # 'admin' or 'recepcionista'
+    permissions: Dict[str, str] = {}  # módulo: 'reader'/'editor'
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserLogin(BaseModel):
@@ -45,6 +55,7 @@ class UserResponse(BaseModel):
     id: str
     username: str
     role: str
+    permissions: Dict[str, str]
     token: str
 
 class Patient(BaseModel):
@@ -53,25 +64,31 @@ class Patient(BaseModel):
     nombre: str
     apellidos: str
     tel_movil: str
+    email: Optional[str] = ""
     fecha_alta: datetime
     notas: Optional[str] = ""
+    source: str = "manual"  # 'agenda', 'whatsapp', 'manual', 'csv'
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PatientCreate(BaseModel):
     nombre: str
     apellidos: str
     tel_movil: str
+    email: Optional[str] = ""
     notas: Optional[str] = ""
 
 class Appointment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    cit_mod: str
+    registro: Optional[int] = None
+    cit_mod: Optional[str] = None
+    fecha_alta: Optional[datetime] = None
     num_pac: str
-    paciente_nombre: str
-    paciente_apellidos: str
-    fecha: str
-    hora: str
-    estado_cita: str
+    apellidos: str
+    nombre: str
+    tel_movil: Optional[str] = ""
+    fecha: date
+    hora: time
+    estado_cita: str = "PROGRAMADA"
     tratamiento: str
     odontologo: str
     notas: Optional[str] = ""
@@ -80,11 +97,12 @@ class Appointment(BaseModel):
 
 class AppointmentCreate(BaseModel):
     num_pac: str
-    paciente_nombre: str
-    paciente_apellidos: str
-    fecha: str
-    hora: str
-    estado_cita: str
+    apellidos: str
+    nombre: str
+    tel_movil: Optional[str] = ""
+    fecha: date
+    hora: time
+    estado_cita: str = "PROGRAMADA"
     tratamiento: str
     odontologo: str
     notas: Optional[str] = ""
@@ -101,18 +119,26 @@ class WhatsAppMessage(BaseModel):
     status: str = Field(default="pending")  # pending, sent, delivered, read
     tag_color: Optional[str] = ""  # 'red', 'blue', 'green'
     urgency_level: Optional[int] = 1  # 1-10
+    is_ai_handled: bool = False
+
+class WhatsAppMessageCreate(BaseModel):
+    phone_number: str
+    message: str
+    schedule_time: Optional[datetime] = None
 
 class MessageTemplate(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     content: str
     variables: List[str] = []
+    category: str = "general"  # 'general', 'recordatorio', 'cuestionario', 'consentimiento'
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TemplateCreate(BaseModel):
     name: str
     content: str
     variables: List[str] = []
+    category: str = "general"
 
 class Automation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -120,6 +146,7 @@ class Automation(BaseModel):
     trigger_type: str  # 'appointment_reminder', 'medication_reminder', 'post_treatment'
     trigger_time: str  # e.g., "1 day before", "2 hours before"
     template_id: str
+    conditions: Dict[str, Any] = {}
     is_active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -128,7 +155,39 @@ class AutomationCreate(BaseModel):
     trigger_type: str
     trigger_time: str
     template_id: str
+    conditions: Dict[str, Any] = {}
     is_active: bool = True
+
+class AIAgentConfig(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    behavior: str = "professional"  # 'professional', 'friendly', 'formal'
+    language: str = "es"
+    personality: str = "Comportamiento de odontólogo responsable, lenguaje correcto pero cercano, tratamiento de 'Usted'"
+    instructions: str = ""
+    is_active: bool = True
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ReminderBatch(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    template_id: str
+    recipients: List[str]  # patient IDs or phone numbers
+    schedule_time: Optional[datetime] = None
+    status: str = "pending"  # pending, sent, failed
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ClinicSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    clinic_name: str = "Rubio García Dental"
+    logo_url: Optional[str] = ""
+    icon_url: Optional[str] = ""
+    primary_color: str = "#007AFF"
+    secondary_color: str = "#FFFFFF"
+    accent_color: str = "#F2F2F7"
+    whatsapp_number: str = "664218253"
+    email: str = "info@rubiogarciadental.com"
+    address: str = "Calle Mayor 19, Alcorcón, 28921 Madrid"
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # Utility Functions
 def create_jwt_token(user_data: dict) -> str:
@@ -145,8 +204,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Initialize default users
-async def init_default_users():
+# Initialize default users and settings
+async def init_default_data():
+    # Create admin user
     admin_exists = await db.users.find_one({"username": "JMD"})
     if not admin_exists:
         admin_password = bcrypt.hash("190582")
@@ -155,28 +215,39 @@ async def init_default_users():
             "username": "JMD",
             "password": admin_password,
             "role": "admin",
+            "permissions": {
+                "dashboard": "editor",
+                "agenda": "editor", 
+                "pacientes": "editor",
+                "whatsapp": "editor",
+                "recordatorios": "editor",
+                "plantillas": "editor",
+                "automatizaciones": "editor",
+                "entrenamiento_ia": "editor",
+                "configuracion": "editor"
+            },
             "created_at": datetime.now(timezone.utc)
         }
         await db.users.insert_one(admin_user)
-    
-    recep_exists = await db.users.find_one({"username": "MGarcia"})
-    if not recep_exists:
-        recep_password = bcrypt.hash("clinic2024")
-        recep_user = {
-            "id": str(uuid.uuid4()),
-            "username": "MGarcia",
-            "password": recep_password,
-            "role": "recepcionista",
-            "created_at": datetime.now(timezone.utc)
-        }
-        await db.users.insert_one(recep_user)
+
+    # Initialize clinic settings
+    settings_exists = await db.clinic_settings.find_one({})
+    if not settings_exists:
+        default_settings = ClinicSettings().dict()
+        await db.clinic_settings.insert_one(default_settings)
+
+    # Initialize AI agent config
+    ai_config_exists = await db.ai_agent_config.find_one({})
+    if not ai_config_exists:
+        default_ai_config = AIAgentConfig().dict()
+        await db.ai_agent_config.insert_one(default_ai_config)
 
 # Authentication Routes
 @api_router.post("/auth/login", response_model=UserResponse)
 async def login(user_login: UserLogin):
     user = await db.users.find_one({"username": user_login.username})
     if not user or not bcrypt.verify(user_login.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     
     token = create_jwt_token({
         "id": user["id"],
@@ -188,6 +259,7 @@ async def login(user_login: UserLogin):
         id=user["id"],
         username=user["username"],
         role=user["role"],
+        permissions=user.get("permissions", {}),
         token=token
     )
 
@@ -203,7 +275,6 @@ async def get_patients(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/patients", response_model=Patient)
 async def create_patient(patient: PatientCreate, current_user: dict = Depends(get_current_user)):
-    # Generate patient number
     patient_count = await db.patients.count_documents({})
     num_pac = f"PAC{str(patient_count + 1).zfill(4)}"
     
@@ -233,12 +304,44 @@ async def delete_patient(patient_id: str, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Patient not found")
     return {"message": "Patient deleted successfully"}
 
+@api_router.post("/patients/import-csv")
+async def import_patients_csv(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    content = await file.read()
+    csv_data = csv.DictReader(io.StringIO(content.decode('utf-8')))
+    
+    imported_count = 0
+    for row in csv_data:
+        try:
+            patient_data = PatientCreate(
+                nombre=row.get('nombre', ''),
+                apellidos=row.get('apellidos', ''),
+                tel_movil=row.get('tel_movil', ''),
+                email=row.get('email', ''),
+                notas=row.get('notas', '')
+            )
+            
+            patient_count = await db.patients.count_documents({})
+            num_pac = f"PAC{str(patient_count + 1).zfill(4)}"
+            
+            patient_dict = patient_data.dict()
+            patient_dict["num_pac"] = num_pac
+            patient_dict["fecha_alta"] = datetime.now(timezone.utc)
+            patient_dict["source"] = "csv"
+            patient_obj = Patient(**patient_dict)
+            
+            await db.patients.insert_one(patient_obj.dict())
+            imported_count += 1
+        except Exception as e:
+            continue
+    
+    return {"message": f"Imported {imported_count} patients successfully"}
+
 # Appointment Routes
 @api_router.get("/appointments", response_model=List[Appointment])
-async def get_appointments(date: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+async def get_appointments(date_filter: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     query = {}
-    if date:
-        query["fecha"] = date
+    if date_filter:
+        query["fecha"] = date_filter
     
     appointments = await db.appointments.find(query).to_list(1000)
     return [Appointment(**appointment) for appointment in appointments]
@@ -246,11 +349,34 @@ async def get_appointments(date: Optional[str] = None, current_user: dict = Depe
 @api_router.post("/appointments", response_model=Appointment)
 async def create_appointment(appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
     appointment_dict = appointment.dict()
-    appointment_dict["cit_mod"] = str(uuid.uuid4())[:8]
+    appointment_dict["registro"] = await get_next_registro()
+    appointment_dict["fecha_alta"] = datetime.now(timezone.utc)
     appointment_obj = Appointment(**appointment_dict)
     
     await db.appointments.insert_one(appointment_obj.dict())
+    
+    # Auto-create patient if not exists
+    existing_patient = await db.patients.find_one({"num_pac": appointment.num_pac})
+    if not existing_patient:
+        patient_data = PatientCreate(
+            nombre=appointment.nombre,
+            apellidos=appointment.apellidos,
+            tel_movil=appointment.tel_movil or ""
+        )
+        patient_dict = patient_data.dict()
+        patient_dict["num_pac"] = appointment.num_pac
+        patient_dict["fecha_alta"] = datetime.now(timezone.utc)
+        patient_dict["source"] = "agenda"
+        patient_obj = Patient(**patient_dict)
+        await db.patients.insert_one(patient_obj.dict())
+    
     return appointment_obj
+
+async def get_next_registro():
+    last_appointment = await db.appointments.find().sort("registro", -1).limit(1).to_list(1)
+    if last_appointment:
+        return last_appointment[0].get("registro", 0) + 1
+    return 1
 
 @api_router.put("/appointments/{appointment_id}", response_model=Appointment)
 async def update_appointment(appointment_id: str, appointment: AppointmentCreate, current_user: dict = Depends(get_current_user)):
@@ -275,19 +401,15 @@ async def get_whatsapp_messages(contact_id: Optional[str] = None, current_user: 
 
 @api_router.post("/whatsapp/send")
 async def send_whatsapp_message(
-    contact_id: str,
-    phone_number: str,
-    message: str,
+    message_data: WhatsAppMessageCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    # Here you would integrate with WhatsApp API (Baileys or similar)
-    # For now, we'll store the message as outgoing
-    
+    # Simulate WhatsApp message sending
     whatsapp_message = WhatsAppMessage(
-        contact_id=contact_id,
+        contact_id=str(uuid.uuid4()),
         contact_name="",
-        phone_number=phone_number,
-        message=message,
+        phone_number=message_data.phone_number,
+        message=message_data.message,
         message_type="outgoing",
         status="sent"
     )
@@ -295,16 +417,23 @@ async def send_whatsapp_message(
     await db.whatsapp_messages.insert_one(whatsapp_message.dict())
     return {"status": "sent", "message": "Message sent successfully"}
 
+@api_router.get("/whatsapp/pending-messages")
+async def get_pending_whatsapp_messages(current_user: dict = Depends(get_current_user)):
+    messages = await db.whatsapp_messages.find({
+        "status": "pending",
+        "message_type": "incoming"
+    }).to_list(100)
+    return messages
+
 @api_router.put("/whatsapp/messages/{message_id}/tag")
-async def tag_whatsapp_message(
+async def tag_message(
     message_id: str,
-    tag_color: str,
-    urgency_level: int,
+    tag_data: Dict[str, Any],
     current_user: dict = Depends(get_current_user)
 ):
     await db.whatsapp_messages.update_one(
         {"id": message_id},
-        {"$set": {"tag_color": tag_color, "urgency_level": urgency_level}}
+        {"$set": tag_data}
     )
     return {"message": "Message tagged successfully"}
 
@@ -348,6 +477,11 @@ async def get_automations(current_user: dict = Depends(get_current_user)):
 async def create_automation(automation: AutomationCreate, current_user: dict = Depends(get_current_user)):
     automation_obj = Automation(**automation.dict())
     await db.automations.insert_one(automation_obj.dict())
+    
+    # Schedule the automation
+    if automation_obj.is_active:
+        schedule_automation(automation_obj)
+    
     return automation_obj
 
 @api_router.put("/automations/{automation_id}", response_model=Automation)
@@ -359,36 +493,293 @@ async def update_automation(automation_id: str, automation: AutomationCreate, cu
     if not updated_automation:
         raise HTTPException(status_code=404, detail="Automation not found")
     
-    return Automation(**updated_automation)
+    # Reschedule the automation
+    automation_obj = Automation(**updated_automation)
+    if automation_obj.is_active:
+        schedule_automation(automation_obj)
+    
+    return automation_obj
+
+def schedule_automation(automation: Automation):
+    """Schedule an automation task"""
+    # Parse trigger_time and schedule accordingly
+    if automation.trigger_type == "appointment_reminder":
+        # Schedule daily check for appointments needing reminders
+        scheduler.add_job(
+            func=process_appointment_reminders,
+            trigger=CronTrigger(hour=16, minute=0),  # Daily at 4 PM
+            id=f"automation_{automation.id}",
+            replace_existing=True,
+            args=[automation.id]
+        )
+
+async def process_appointment_reminders(automation_id: str):
+    """Process appointment reminder automation"""
+    automation = await db.automations.find_one({"id": automation_id})
+    if not automation or not automation.get("is_active"):
+        return
+    
+    # Get appointments for tomorrow
+    tomorrow = date.today() + timedelta(days=1)
+    appointments = await db.appointments.find({
+        "fecha": tomorrow.isoformat(),
+        "estado_cita": {"$in": ["PROGRAMADA", "CONFIRMADA"]}
+    }).to_list(1000)
+    
+    template = await db.message_templates.find_one({"id": automation["template_id"]})
+    if not template:
+        return
+    
+    for appointment in appointments:
+        # Send reminder message
+        message_content = template["content"].format(
+            nombre=appointment["nombre"],
+            apellido=appointment["apellidos"],
+            fecha_cita=appointment["fecha"],
+            hora_cita=appointment["hora"]
+        )
+        
+        reminder_message = WhatsAppMessage(
+            contact_id=appointment["num_pac"],
+            contact_name=f"{appointment['nombre']} {appointment['apellidos']}",
+            phone_number=appointment.get("tel_movil", ""),
+            message=message_content,
+            message_type="outgoing",
+            status="scheduled"
+        )
+        
+        await db.whatsapp_messages.insert_one(reminder_message.dict())
+
+# Reminder Routes
+@api_router.post("/reminders/send-batch")
+async def send_reminder_batch(
+    batch_data: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)
+):
+    batch = ReminderBatch(
+        name=batch_data["name"],
+        template_id=batch_data["template_id"],
+        recipients=batch_data["recipients"],
+        schedule_time=batch_data.get("schedule_time")
+    )
+    
+    await db.reminder_batches.insert_one(batch.dict())
+    
+    # Process batch in background
+    background_tasks.add_task(process_reminder_batch, batch.id)
+    
+    return {"message": "Reminder batch scheduled successfully", "batch_id": batch.id}
+
+async def process_reminder_batch(batch_id: str):
+    """Process a reminder batch"""
+    batch = await db.reminder_batches.find_one({"id": batch_id})
+    if not batch:
+        return
+    
+    template = await db.message_templates.find_one({"id": batch["template_id"]})
+    if not template:
+        return
+    
+    sent_count = 0
+    for recipient in batch["recipients"]:
+        # Get patient info
+        patient = await db.patients.find_one({"id": recipient})
+        if not patient:
+            continue
+        
+        # Personalize message
+        message_content = template["content"]
+        for var in template.get("variables", []):
+            if var == "nombre":
+                message_content = message_content.replace("{{nombre}}", patient["nombre"])
+            elif var == "apellido":
+                message_content = message_content.replace("{{apellido}}", patient["apellidos"])
+        
+        # Create message
+        reminder_message = WhatsAppMessage(
+            contact_id=patient["id"],
+            contact_name=f"{patient['nombre']} {patient['apellidos']}",
+            phone_number=patient["tel_movil"],
+            message=message_content,
+            message_type="outgoing",
+            status="sent"
+        )
+        
+        await db.whatsapp_messages.insert_one(reminder_message.dict())
+        sent_count += 1
+    
+    # Update batch status
+    await db.reminder_batches.update_one(
+        {"id": batch_id},
+        {"$set": {"status": "sent", "sent_count": sent_count}}
+    )
+
+# AI Agent Routes
+@api_router.get("/ai-agent/config", response_model=AIAgentConfig)
+async def get_ai_config(current_user: dict = Depends(get_current_user)):
+    config = await db.ai_agent_config.find_one({})
+    if not config:
+        config = AIAgentConfig().dict()
+        await db.ai_agent_config.insert_one(config)
+    return AIAgentConfig(**config)
+
+@api_router.put("/ai-agent/config", response_model=AIAgentConfig)
+async def update_ai_config(config: AIAgentConfig, current_user: dict = Depends(get_current_user)):
+    config.updated_at = datetime.now(timezone.utc)
+    await db.ai_agent_config.update_one({}, {"$set": config.dict()}, upsert=True)
+    return config
+
+@api_router.post("/ai-agent/test")
+async def test_ai_agent(test_data: Dict[str, str], current_user: dict = Depends(get_current_user)):
+    # Simulate AI response
+    user_message = test_data.get("message", "")
+    
+    # Basic AI simulation
+    if "dolor" in user_message.lower():
+        ai_response = "Entiendo que tiene dolor. ¿Podría describir la intensidad del dolor del 1 al 10? Le recomiendo que programe una cita urgente."
+    elif "cita" in user_message.lower():
+        ai_response = "Por supuesto, estaré encantada de ayudarle con su cita. ¿Qué día prefiere para su visita?"
+    else:
+        ai_response = "Gracias por contactarnos. Soy el asistente virtual de Rubio García Dental. ¿En qué puedo ayudarle hoy?"
+    
+    return {"response": ai_response}
+
+# Configuration Routes
+@api_router.get("/settings", response_model=ClinicSettings)
+async def get_clinic_settings(current_user: dict = Depends(get_current_user)):
+    settings = await db.clinic_settings.find_one({})
+    if not settings:
+        settings = ClinicSettings().dict()
+        await db.clinic_settings.insert_one(settings)
+    return ClinicSettings(**settings)
+
+@api_router.put("/settings", response_model=ClinicSettings)
+async def update_clinic_settings(settings: ClinicSettings, current_user: dict = Depends(get_current_user)):
+    settings.updated_at = datetime.now(timezone.utc)
+    await db.clinic_settings.update_one({}, {"$set": settings.dict()}, upsert=True)
+    return settings
+
+@api_router.post("/settings/upload-logo")
+async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    # In a real implementation, save to file storage service
+    # For now, simulate URL
+    logo_url = f"/uploads/logo_{uuid.uuid4()}.{file.filename.split('.')[-1]}"
+    
+    await db.clinic_settings.update_one(
+        {},
+        {"$set": {"logo_url": logo_url}},
+        upsert=True
+    )
+    
+    return {"logo_url": logo_url}
 
 # Dashboard Routes
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).date().isoformat()
     
-    # Get today's appointments
+    # Today's appointments
     today_appointments = await db.appointments.count_documents({"fecha": today})
     
-    # Get pending WhatsApp messages
-    pending_messages = await db.whatsapp_messages.count_documents({"status": "pending"})
+    # Pending WhatsApp messages
+    pending_messages = await db.whatsapp_messages.count_documents({
+        "status": "pending",
+        "message_type": "incoming"
+    })
     
-    # Get total patients
+    # Total patients
     total_patients = await db.patients.count_documents({})
     
-    # Get confirmation rate (assuming confirmed appointments have estado_cita = "Confirmada")
+    # Confirmation rate
     confirmed_appointments = await db.appointments.count_documents({
         "fecha": today,
-        "estado_cita": "Confirmada"
+        "estado_cita": "CONFIRMADA"
     })
     
     confirmation_rate = (confirmed_appointments / today_appointments * 100) if today_appointments > 0 else 0
+    
+    # Recent appointments for today
+    recent_appointments = await db.appointments.find({
+        "fecha": today
+    }).sort("hora", 1).to_list(10)
+    
+    # Urgent messages
+    urgent_messages = await db.whatsapp_messages.find({
+        "tag_color": "red",
+        "status": "pending"
+    }).to_list(5)
     
     return {
         "today_appointments": today_appointments,
         "pending_messages": pending_messages,
         "total_patients": total_patients,
-        "confirmation_rate": round(confirmation_rate, 1)
+        "confirmation_rate": round(confirmation_rate, 1),
+        "recent_appointments": recent_appointments,
+        "urgent_messages": urgent_messages
     }
+
+@api_router.get("/dashboard/appointment-stats")
+async def get_appointment_stats(current_user: dict = Depends(get_current_user)):
+    """Get appointment statistics for charts"""
+    # Get appointments for the last 7 days
+    end_date = datetime.now(timezone.utc).date()
+    start_date = end_date - timedelta(days=6)
+    
+    daily_stats = []
+    for i in range(7):
+        current_date = start_date + timedelta(days=i)
+        count = await db.appointments.count_documents({
+            "fecha": current_date.isoformat()
+        })
+        daily_stats.append({
+            "date": current_date.isoformat(),
+            "count": count
+        })
+    
+    # Status distribution
+    status_stats = await db.appointments.aggregate([
+        {"$group": {"_id": "$estado_cita", "count": {"$sum": 1}}}
+    ]).to_list(100)
+    
+    return {
+        "daily_appointments": daily_stats,
+        "status_distribution": status_stats
+    }
+
+# User Management Routes
+@api_router.get("/users", response_model=List[User])
+async def get_users(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    users = await db.users.find({}, {"password": 0}).to_list(100)
+    return [User(**user) for user in users]
+
+@api_router.post("/users", response_model=User)
+async def create_user(user_data: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Check if username already exists
+    existing_user = await db.users.find_one({"username": user_data["username"]})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    # Hash password
+    hashed_password = bcrypt.hash(user_data["password"])
+    
+    user = User(
+        username=user_data["username"],
+        role=user_data["role"],
+        permissions=user_data.get("permissions", {})
+    )
+    
+    user_dict = user.dict()
+    user_dict["password"] = hashed_password
+    
+    await db.users.insert_one(user_dict)
+    return user
 
 # Include router
 app.include_router(api_router)
@@ -411,9 +802,11 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    await init_default_users()
+    await init_default_data()
+    scheduler.start()
     logger.info("DenApp Control started successfully")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
