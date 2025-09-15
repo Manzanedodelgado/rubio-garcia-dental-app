@@ -153,27 +153,33 @@ backend:
 frontend:
   - task: "WhatsApp Connection Component"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/src/components/WhatsAppConnection.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "New dedicated component created for WhatsApp QR code display and connection management"
+      - working: false
+        agent: "user"
+        comment: "CRITICAL ISSUES REPORTED: Se desconecta cuando cambias de pestaña, No permite buscar contacto en Pacientes para iniciar conversación ni añadir numero de forma manual, No envía mensajes, No guarda historial de conversacion, No permite agregar a contacto de Pacientes desde una conversacion de WhatsApp, Se ha aplicado la IA a pesar de estar desconectada, La rueda de configurar no tiene ningún función, No permite editar la información que ve el paciente de nuestro perfil de WhatsApp ni la imagen"
 
   - task: "WhatsApp Module Update"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/src/components/WhatsAppModule.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated main WhatsApp module to integrate real connection status and QR code component"
+      - working: false
+        agent: "user"
+        comment: "Multiple critical failures reported - disconnection issues, no message sending, no contact search, no history saving, non-functional configuration, missing profile editing features"
 
 metadata:
   created_by: "main_agent"
