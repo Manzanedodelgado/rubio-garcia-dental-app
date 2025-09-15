@@ -19,20 +19,32 @@ const WhatsAppModule = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [connectedUser, setConnectedUser] = useState(null);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [patientInfo, setPatientInfo] = useState(null);
+  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     fetchConversations();
-    fetchMessages();
-    // Simulate connection status
-    setConnectionStatus('connected');
-  }, []);
+    if (connectionStatus === 'connected') {
+      fetchMessages();
+    }
+  }, [connectionStatus]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleConnectionChange = (status, user) => {
+    setConnectionStatus(status);
+    setConnectedUser(user);
+    
+    // Close connection dialog when connected
+    if (status === 'connected') {
+      setShowConnectionDialog(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
