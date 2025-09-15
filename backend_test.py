@@ -531,9 +531,24 @@ def main():
     tester.test_get_templates()
     
     # WhatsApp Tests
-    print("\n💬 WHATSAPP TESTS")
+    print("\n💬 WHATSAPP INTEGRATION TESTS")
     print("-" * 30)
+    
+    # Test Node.js WhatsApp Service directly
+    print("\n🔧 WhatsApp Node.js Service Tests:")
+    tester.test_whatsapp_node_service_health()
+    tester.test_whatsapp_node_service_status()
+    tester.test_whatsapp_node_service_qr()
+    tester.test_whatsapp_node_send_direct()
+    tester.test_whatsapp_node_send_bulk_direct()
+    
+    # Test Backend Integration
+    print("\n🔗 WhatsApp Backend Integration Tests:")
+    tester.test_whatsapp_backend_status()
+    tester.test_whatsapp_backend_qr()
     tester.test_get_whatsapp_messages()
+    tester.test_whatsapp_send_message()
+    tester.test_whatsapp_send_bulk_messages()
     
     # Permission Tests
     print("\n🔐 PERMISSION TESTS")
