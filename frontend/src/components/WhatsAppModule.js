@@ -303,9 +303,11 @@ const WhatsAppModule = () => {
     setNewMessage('');
 
     try {
-      await axios.post(`${API}/whatsapp/send-real`, {
+      const response = await axios.post(`${API}/whatsapp/send-real`, {
         phone_number: selectedChat.phone,
         message: newMessage
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
       // Update message status
@@ -319,11 +321,16 @@ const WhatsAppModule = () => {
           ? { ...c, lastMessage: newMessage, timestamp: new Date() }
           : c
       ));
+
+      console.log('Message sent successfully:', response.data);
     } catch (error) {
       console.error('Error sending message:', error);
       setMessages(prev => prev.map(m => 
         m.id === message.id ? { ...m, status: 'error' } : m
       ));
+      
+      // Show error to user
+      alert('Error al enviar el mensaje. Por favor, verifica la conexión de WhatsApp.');
     }
   };
 
