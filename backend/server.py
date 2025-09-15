@@ -792,6 +792,28 @@ async def get_whatsapp_qr(current_user: dict = Depends(get_current_user)):
     from services.whatsapp_service import whatsapp_service
     return await whatsapp_service.get_qr_code()
 
+@api_router.post("/whatsapp/messages")
+async def create_whatsapp_message(
+    message_data: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new WhatsApp message record"""
+    try:
+        whatsapp_message = WhatsAppMessage(
+            contact_id=message_data.get("contact_id"),
+            contact_name=message_data.get("contact_name"),
+            phone_number=message_data.get("phone_number"),
+            message=message_data.get("message"),
+            message_type=message_data.get("message_type", "outgoing"),
+            status=message_data.get("status", "sent")
+        )
+        
+        await db.whatsapp_messages.insert_one(whatsapp_message.dict())
+        return {"status": "success", "message": "Message saved successfully"}
+    except Exception as e:
+        logger.error(f"Error saving WhatsApp message: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error saving message")
+
 @api_router.post("/whatsapp/send-real")
 async def send_real_whatsapp_message(
     message_data: Dict[str, str],
