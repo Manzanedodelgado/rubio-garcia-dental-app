@@ -30,6 +30,15 @@ const WhatsAppModule = () => {
   const [manualPhone, setManualPhone] = useState('');
   const [manualName, setManualName] = useState('');
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+  const [contactForm, setContactForm] = useState({
+    nombre: '',
+    apellidos: '',
+    tel_movil: '',
+    email: '',
+    notas: ''
+  });
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
