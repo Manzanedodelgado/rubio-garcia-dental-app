@@ -214,7 +214,7 @@ const WhatsAppModule = () => {
     setNewMessage('');
 
     try {
-      await axios.post(`${API}/whatsapp/send`, {
+      await axios.post(`${API}/whatsapp/send-real`, {
         phone_number: selectedChat.phone,
         message: newMessage
       });
