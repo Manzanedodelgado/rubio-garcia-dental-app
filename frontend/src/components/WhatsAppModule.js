@@ -539,6 +539,11 @@ const WhatsAppModule = () => {
         </div>
       )}
 
+      {/* Configuration Dialog */}
+      {showConfigDialog && (
+        <WhatsAppConfig onClose={() => setShowConfigDialog(false)} />
+      )}
+
       {/* WhatsApp Interface */}
       {connectionStatus === 'connected' ? (
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" style={{ height: '600px' }}>
