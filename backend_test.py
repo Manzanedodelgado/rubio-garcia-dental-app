@@ -354,12 +354,8 @@ class DenAppAPITester:
         success, response = self.run_test(
             "WhatsApp Send Message",
             "POST",
-            "whatsapp/send-real",
+            f"whatsapp/send-real?phone_number={test_phone}&message={test_message}",
             200,
-            data={
-                "phone_number": test_phone,
-                "message": test_message
-            },
             token=self.admin_token
         )
         if success:
