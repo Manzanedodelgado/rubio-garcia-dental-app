@@ -1,0 +1,11 @@
+rubio-garcia-dental-app/
+├── backend/
+│   ├── app.js
+│   ├── database.js
+│   └── package.json
+├── frontend/
+│   ├── public/
+│   └── src/
+│       └── App.js
+└── database/
+    └── schema.sql

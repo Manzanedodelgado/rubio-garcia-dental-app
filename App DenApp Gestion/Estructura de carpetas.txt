@@ -1,0 +1,22 @@
+rubio-garcia-dental-app/
+├── backend/
+│   ├── app.js
+│   ├── database.js
+│   ├── package.json
+│   └── routes/
+│       ├── auth.js
+│       ├── appointments.js
+│       └── whatsapp.js
+├── frontend/
+│   ├── public/
+│   │   └── index.html
+│   └── src/
+│       ├── App.js
+│       ├── components/
+│       │   ├── Login.js
+│       │   └── Dashboard.js
+│       └── styles/
+│           └── index.css
+├── database/
+│   └── schema.sql
+└── README.md
