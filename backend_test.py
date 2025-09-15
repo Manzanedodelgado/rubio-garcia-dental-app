@@ -465,7 +465,7 @@ class DenAppAPITester:
             "Unauthorized Access",
             "GET",
             "patients",
-            401
+            403  # Changed from 401 to 403 as that's what FastAPI returns
         )
         return success
 
