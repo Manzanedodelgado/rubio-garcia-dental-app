@@ -700,77 +700,23 @@ const Patients = () => {
   );
 };
 
-// Import AgendaModule
+// Import all modules
 import AgendaModule from './components/AgendaModule';
+import WhatsAppModule from './components/WhatsAppModule';
+import RecordatoriosModule from './components/RecordatoriosModule';
+import PlantillasModule from './components/PlantillasModule';
+import AutomatizacionesModule from './components/AutomatizacionesModule';
+import EntrenamientoIAModule from './components/EntrenamientoIAModule';
+import ConfiguracionModule from './components/ConfiguracionModule';
 
-// Placeholder components for other modules
+// Components for all modules
 const Agenda = () => <AgendaModule />;
-
-const WhatsApp = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <MessageCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">WhatsApp</h2>
-      <p className="text-gray-600 mb-4">Interfaz similar a WhatsApp Web con IA integrada</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
-
-const Recordatorios = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Send className="w-16 h-16 text-orange-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Recordatorios</h2>
-      <p className="text-gray-600 mb-4">Envío masivo de recordatorios y mensajes</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
-
-const Plantillas = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <FileText className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Plantillas</h2>
-      <p className="text-gray-600 mb-4">Diseño de plantillas de mensajes personalizadas</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
-
-const Automatizaciones = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Settings className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Automatizaciones</h2>
-      <p className="text-gray-600 mb-4">Diseño y activación de reglas automáticas</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
-
-const EntrenamientoIA = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Bot className="w-16 h-16 text-cyan-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Entrenamiento IA</h2>
-      <p className="text-gray-600 mb-4">Configuración del comportamiento del agente IA</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
-
-const Configuracion = () => (
-  <div className="p-6">
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Settings className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Configuración</h2>
-      <p className="text-gray-600 mb-4">Personalización del sistema y gestión de usuarios</p>
-      <p className="text-sm text-gray-500">Módulo en desarrollo</p>
-    </div>
-  </div>
-);
+const WhatsApp = () => <WhatsAppModule />;
+const Recordatorios = () => <RecordatoriosModule />;
+const Plantillas = () => <PlantillasModule />;
+const Automatizaciones = () => <AutomatizacionesModule />;
+const EntrenamientoIA = () => <EntrenamientoIAModule />;
+const Configuracion = () => <ConfiguracionModule />;
 
 // Sidebar Component
 const Sidebar = ({ currentView, setCurrentView, user, isOpen, setIsOpen }) => {
