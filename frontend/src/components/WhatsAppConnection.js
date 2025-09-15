@@ -21,8 +21,22 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
 
   useEffect(() => {
     fetchConnectionStatus();
-    const interval = setInterval(fetchConnectionStatus, 3000); // Check every 3 seconds
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchConnectionStatus, 5000); // Check every 5 seconds instead of 3
+    
+    // Handle page visibility change to prevent disconnection
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible again, check connection immediately
+        setTimeout(fetchConnectionStatus, 1000);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
