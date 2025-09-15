@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import WhatsAppConnection from './WhatsAppConnection';
 import { 
   MessageCircle, Send, Phone, Clock, User, Search, 
   Paperclip, Smile, MoreVertical, Settings, Tag,
-  Circle, CheckCircle, AlertCircle, Calendar, Bot
+  Circle, CheckCircle, AlertCircle, Calendar, Bot,
+  Wifi, WifiOff
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
