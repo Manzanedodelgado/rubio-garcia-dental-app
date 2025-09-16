@@ -17,6 +17,7 @@ const WhatsAppModuleSimple = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [pendingMessages, setPendingMessages] = useState([]); // Messages waiting to be confirmed
+  const messagesEndRef = useRef(null); // Reference for auto-scroll
 
   // Check connection status
   const checkConnection = async () => {
