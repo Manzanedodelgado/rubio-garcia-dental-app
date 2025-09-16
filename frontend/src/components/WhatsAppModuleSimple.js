@@ -133,6 +133,9 @@ const WhatsAppModuleSimple = () => {
     const messageText = newMessage;
     setNewMessage('');
 
+    // Scroll to bottom immediately after adding message
+    setTimeout(scrollToBottom, 50);
+
     try {
       const authToken = localStorage.getItem('token');
       
