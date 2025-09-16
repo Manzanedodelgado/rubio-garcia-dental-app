@@ -74,7 +74,7 @@ const WhatsAppModuleSimple = () => {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
-      // Group messages by phone number
+      // Group messages by phone number to create conversations
       const messagesData = response.data;
       const conversationsMap = new Map();
       
@@ -83,22 +83,31 @@ const WhatsAppModuleSimple = () => {
         if (!conversationsMap.has(key)) {
           conversationsMap.set(key, {
             id: key,
-            contact: msg.contact_name || msg.phone_number,
-            phone: msg.phone_number,
+            contact: msg.contact_name || key,
+            phone: key,
             lastMessage: msg.message,
             timestamp: new Date(msg.timestamp),
-            unread: msg.message_type === 'incoming' && !msg.status?.includes('read')
+            unread: msg.message_type === 'incoming' && !msg.status?.includes('read'),
+            messageCount: 1
           });
         } else {
           const conv = conversationsMap.get(key);
+          conv.messageCount++;
           if (new Date(msg.timestamp) > conv.timestamp) {
             conv.lastMessage = msg.message;
             conv.timestamp = new Date(msg.timestamp);
+            conv.unread = msg.message_type === 'incoming' && !msg.status?.includes('read');
           }
         }
       });
       
-      setConversations(Array.from(conversationsMap.values()));
+      // Sort conversations by timestamp (newest first)
+      const sortedConversations = Array.from(conversationsMap.values())
+        .sort((a, b) => b.timestamp - a.timestamp);
+      
+      setConversations(sortedConversations);
+      console.log('📋 Conversations loaded:', sortedConversations.length);
+      
     } catch (error) {
       console.error('❌ Error loading conversations:', error);
       // Use fallback data
@@ -109,7 +118,8 @@ const WhatsAppModuleSimple = () => {
           phone: '34648085696',
           lastMessage: 'Hola',
           timestamp: new Date(),
-          unread: true
+          unread: true,
+          messageCount: 1
         }
       ]);
     }
