@@ -21,63 +21,77 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
 
   useEffect(() => {
     let intervalId;
-    let isVisible = !document.hidden;
+    let isPageVisible = !document.hidden;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
 
-    const fetchWithErrorHandling = async () => {
+    const fetchConnectionStatusRobust = async () => {
       try {
         await fetchConnectionStatus();
+        reconnectAttempts = 0; // Reset on successful fetch
       } catch (error) {
-        console.warn('Connection check failed, retrying...', error);
+        console.warn('WhatsApp connection check failed:', error);
+        reconnectAttempts++;
+        
+        if (reconnectAttempts <= MAX_RECONNECT_ATTEMPTS) {
+          console.log(`Retry attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+          setTimeout(fetchConnectionStatus, 2000 * reconnectAttempts);
+        }
       }
     };
 
     const startPolling = () => {
-      fetchWithErrorHandling();
-      intervalId = setInterval(fetchWithErrorHandling, 5000);
+      console.log('🔄 WhatsApp: Starting connection polling');
+      fetchConnectionStatusRobust();
+      intervalId = setInterval(fetchConnectionStatusRobust, 3000); // More frequent polling
     };
 
     const stopPolling = () => {
       if (intervalId) {
+        console.log('⏹️ WhatsApp: Stopping connection polling');
         clearInterval(intervalId);
         intervalId = null;
       }
     };
 
-    // Handle page visibility change with more robust logic
+    // Handle visibility changes
     const handleVisibilityChange = () => {
-      const currentlyVisible = !document.hidden;
+      const nowVisible = !document.hidden;
       
-      if (currentlyVisible && !isVisible) {
-        // Page became visible - restart polling immediately
-        console.log('WhatsApp: Page visible, restarting connection monitoring');
+      if (nowVisible && !isPageVisible) {
+        // Page became visible - aggressive reconnection
+        console.log('👁️ WhatsApp: Page visible - forcing connection check');
         stopPolling();
-        setTimeout(startPolling, 500); // Small delay to ensure smooth transition
-      } else if (!currentlyVisible && isVisible) {
-        // Page became hidden - continue polling but less frequently
-        console.log('WhatsApp: Page hidden, reducing polling frequency');
-        stopPolling();
-        intervalId = setInterval(fetchWithErrorHandling, 15000); // Check every 15 seconds when hidden
+        setTimeout(() => {
+          startPolling();
+        }, 100);
       }
       
-      isVisible = currentlyVisible;
+      isPageVisible = nowVisible;
     };
 
-    // Initial start
+    // Handle window focus
+    const handleWindowFocus = () => {
+      console.log('🎯 WhatsApp: Window focused - checking connection');
+      if (isPageVisible) {
+        fetchConnectionStatusRobust();
+      }
+    };
+
+    // Start initial polling
     startPolling();
     
-    // Add event listeners
+    // Add all event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', () => {
-      if (!intervalId || isVisible) {
-        console.log('WhatsApp: Window focused, ensuring connection monitoring');
-        stopPolling();
-        startPolling();
-      }
-    });
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('pageshow', handleWindowFocus);
     
+    // Cleanup
     return () => {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('pageshow', handleWindowFocus);
     };
   }, []);
 
