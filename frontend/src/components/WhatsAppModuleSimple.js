@@ -192,16 +192,21 @@ const WhatsAppModuleSimple = () => {
     try {
       const authToken = localStorage.getItem('token');
       
+      console.log('📤 Sending message to:', selectedChat.phone, 'Message:', messageText);
+      console.log('📤 Using token:', authToken ? 'YES' : 'NO');
+      
       // Send via WhatsApp
-      await axios.post(`${API}/whatsapp/send-real`, {
+      const sendResponse = await axios.post(`${API}/whatsapp/send-real`, {
         phone_number: selectedChat.phone,
         message: messageText
       }, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
+      console.log('📤 Send response:', sendResponse.data);
+
       // Save to database
-      await axios.post(`${API}/whatsapp/messages`, {
+      const saveResponse = await axios.post(`${API}/whatsapp/messages`, {
         contact_id: selectedChat.id,
         contact_name: selectedChat.contact,
         phone_number: selectedChat.phone,
@@ -211,6 +216,8 @@ const WhatsAppModuleSimple = () => {
       }, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
+
+      console.log('📤 Save response:', saveResponse.data);
 
       // Update message status to sent
       setMessages(prev => prev.map(m => 
