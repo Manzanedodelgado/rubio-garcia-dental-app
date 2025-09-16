@@ -1061,6 +1061,11 @@ async def update_google_sheets_appointment(appointment_id: str, appointment: App
 # Include router
 app.include_router(api_router)
 
+# Mount static files for uploads
+uploads_dir = ROOT_DIR / "uploads"
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
