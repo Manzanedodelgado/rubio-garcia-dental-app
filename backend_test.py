@@ -716,6 +716,18 @@ def main():
     tester.test_whatsapp_send_message()
     tester.test_whatsapp_send_bulk_messages()
     
+    # Google Sheets Integration Tests
+    print("\n📊 GOOGLE SHEETS INTEGRATION TESTS")
+    print("-" * 30)
+    tester.test_agenda_connection()
+    tester.test_agenda_get_all()
+    tester.test_agenda_sync_status()
+    tester.test_agenda_manual_sync()
+    tester.test_agenda_search()
+    tester.test_agenda_stats()
+    tester.test_agenda_create_item()
+    tester.test_agenda_update_item()
+    
     # Permission Tests
     print("\n🔐 PERMISSION TESTS")
     print("-" * 30)
