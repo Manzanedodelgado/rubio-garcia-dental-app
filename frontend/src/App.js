@@ -712,7 +712,7 @@ import ConfiguracionModule from './components/ConfiguracionModule';
 
 // Components for all modules
 const Agenda = () => <AgendaModule />;
-const WhatsApp = () => <WhatsAppModule />;
+const WhatsApp = () => <WhatsAppModuleSimple />;
 const Recordatorios = () => <RecordatoriosModule />;
 const Plantillas = () => <PlantillasModule />;
 const Automatizaciones = () => <AutomatizacionesModule />;
