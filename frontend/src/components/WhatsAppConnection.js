@@ -146,19 +146,26 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
   const fetchConnectionStatus = async () => {
     try {
       setError(null);
+      
+      // Always check both status and QR with proper auth headers
+      const authToken = localStorage.getItem('token');
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+      
       const [statusResponse, qrResponse] = await Promise.all([
-        axios.get(`${API}/whatsapp/status`),
-        axios.get(`${API}/whatsapp/qr`)
+        axios.get(`${API}/whatsapp/status`, { headers }),
+        axios.get(`${API}/whatsapp/qr`, { headers })
       ]);
 
       const status = statusResponse.data;
       const qrData = qrResponse.data;
 
+      console.log('🔍 Connection status received:', status);
+      
       setConnectionStatus(status.status);
       setConnectedUser(status.user);
       setLastUpdate(new Date());
 
-      if (qrData.qr && status.status === 'connecting') {
+      if (qrData.qr && (status.status === 'connecting' || status.status === 'disconnected')) {
         setQrCode(qrData.qr);
         setQrExpiry(qrData.expires_at);
       } else if (status.status === 'connected') {
@@ -169,7 +176,10 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
     } catch (error) {
       console.error('Error fetching WhatsApp status:', error);
       setError('Error al conectar con el servicio de WhatsApp');
-      setConnectionStatus('error');
+      // Don't set to error immediately, might be temporary
+      if (connectionStatus === 'disconnected') {
+        setConnectionStatus('error');
+      }
     } finally {
       setLoading(false);
     }
