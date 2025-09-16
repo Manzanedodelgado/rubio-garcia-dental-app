@@ -448,6 +448,8 @@ const WhatsAppModuleSimple = () => {
                       </div>
                     </div>
                   )}
+                  {/* Auto-scroll reference */}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Message Input */}
