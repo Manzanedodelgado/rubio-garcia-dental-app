@@ -160,7 +160,48 @@ class GoogleSheetsService:
         """Alias for read_agenda_data for backward compatibility."""
         return self.read_agenda_data()
     
-    async def get_appointments_by_date(self, target_date: str) -> List[Dict[str, Any]]:
+    @retry_with_backoff(max_retries=3)
+    def write_agenda_data(self, agenda_items, clear_existing: bool = False):
+        """Write agenda data to Google Sheets."""
+        try:
+            if not self.worksheet:
+                self._get_worksheet()
+            
+            if clear_existing:
+                self.worksheet.clear()
+            
+            if not agenda_items:
+                logger.info("No agenda items to write")
+                return True
+            
+            # Prepare headers (from the expected columns in the sheet)
+            headers = [
+                'Registro', 'CitMod', 'FechaAlta', 'NumPac', 'Apellidos', 'Nombre',
+                'TelMovil', 'Fecha', 'Hora', 'EstadoCita', 'Tratamiento', 
+                'Odontologo', 'Notas', 'Duracion'
+            ]
+            
+            # Prepare data rows
+            rows = [headers]
+            for item in agenda_items:
+                rows.append(item.to_sheets_row())
+            
+            # Update the worksheet
+            self.worksheet.update('A1', rows)
+            
+            logger.info(f"Successfully wrote {len(agenda_items)} agenda items to Google Sheets")
+            self.last_sync_time = datetime.utcnow()
+            self.sync_stats['successful_syncs'] += 1
+            
+            return True
+        
+        except Exception as e:
+            logger.error(f"Failed to write agenda data: {e}")
+            self.sync_stats['failed_syncs'] += 1
+            self.sync_stats['last_error'] = str(e)
+            raise GoogleSheetsError(f"Failed to write agenda data: {e}")
+    
+    async def get_appointments_by_date(self, target_date: str):
         """Get appointments for a specific date"""
         all_appointments = await self.get_all_appointments()
         return [apt for apt in all_appointments if apt.get('fecha') == target_date]
