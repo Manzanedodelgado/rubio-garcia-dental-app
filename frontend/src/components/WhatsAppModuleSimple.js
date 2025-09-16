@@ -128,14 +128,20 @@ const WhatsAppModuleSimple = () => {
   const loadMessages = async (chatId) => {
     try {
       const authToken = localStorage.getItem('token');
-      const response = await axios.get(`${API}/whatsapp/messages?contact_id=${chatId}`, {
+      console.log('📨 Loading messages for chat:', chatId);
+      
+      // Get all messages first
+      const response = await axios.get(`${API}/whatsapp/messages`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
       
+      console.log('📨 All messages received:', response.data.length);
+      
+      // Filter messages for this specific contact
       const messagesData = response.data
         .filter(msg => msg.phone_number === chatId)
         .map(msg => ({
-          id: msg.id || Date.now(),
+          id: msg.id || Date.now() + Math.random(),
           message: msg.message,
           timestamp: new Date(msg.timestamp),
           type: msg.message_type === 'incoming' ? 'incoming' : 'outgoing',
@@ -143,7 +149,9 @@ const WhatsAppModuleSimple = () => {
         }))
         .sort((a, b) => a.timestamp - b.timestamp);
       
+      console.log('📨 Filtered messages for', chatId, ':', messagesData.length);
       setMessages(messagesData);
+      
     } catch (error) {
       console.error('❌ Error loading messages:', error);
       setMessages([]);
