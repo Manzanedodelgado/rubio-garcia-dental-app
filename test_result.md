@@ -303,11 +303,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Google Sheets API Authentication"
-    - "Google Sheets Integration Service"
-    - "Automatic Synchronization Service"
-    - "Agenda API Routes"
-    - "Server Integration"
+    - "Agenda Module Integration"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
