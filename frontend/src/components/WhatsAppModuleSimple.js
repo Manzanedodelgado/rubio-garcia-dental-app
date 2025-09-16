@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   MessageCircle, Send, Smartphone, CheckCircle, 
-  Clock, User, RefreshCw, Settings
+  Clock, User, RefreshCw, Settings, Plus, Search, X
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
