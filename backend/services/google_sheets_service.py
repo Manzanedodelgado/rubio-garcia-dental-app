@@ -313,7 +313,7 @@ class GoogleSheetsService:
     async def delete_appointment(self, appointment_id: str) -> bool:
         """Delete an appointment from the Google Sheet (soft delete by updating status)"""
         try:
-            await self.update_appointment(appointment_id, {'estadocita': 'CANCELADA'})
+            await self.update_appointment(appointment_id, {'estado_cita': 'CANCELADA'})
             return True
         except Exception as e:
             logger.error(f"Error deleting appointment in Google Sheets: {str(e)}")
@@ -337,6 +337,65 @@ class GoogleSheetsService:
                 'timestamp': datetime.now().isoformat(),
                 'status': 'error',
                 'message': f'Sync failed: {str(e)}'
+            }
+    
+    def get_sync_status(self):
+        """Get current synchronization status."""
+        from models.agenda import SyncStatus
+        
+        try:
+            # Try to read one record to test connectivity
+            if self.worksheet:
+                test_records = self.worksheet.get_all_records(head=1)
+                total_items = len(test_records)
+            else:
+                total_items = 0
+                
+        except Exception as e:
+            logger.warning(f"Could not get item count: {e}")
+            total_items = 0
+        
+        return SyncStatus(
+            last_sync_time=self.last_sync_time,
+            sync_in_progress=False,
+            scheduler_running=False,
+            total_items=total_items,
+            successful_syncs=self.sync_stats['successful_syncs'],
+            failed_syncs=self.sync_stats['failed_syncs'],
+            last_error=self.sync_stats['last_error']
+        )
+    
+    def test_connection(self) -> Dict[str, any]:
+        """Test the connection to Google Sheets."""
+        try:
+            if not self.worksheet:
+                self._get_worksheet()
+            
+            # Try to read headers
+            headers = self.worksheet.row_values(1)
+            
+            # Get worksheet info
+            worksheet_info = {
+                'title': self.worksheet.title,
+                'row_count': self.worksheet.row_count,
+                'col_count': self.worksheet.col_count,
+                'headers': headers,
+                'url': f"https://docs.google.com/spreadsheets/d/{self.spreadsheet_id}"
+            }
+            
+            logger.info("Google Sheets connection test successful")
+            return {
+                'status': 'success',
+                'message': 'Connection to Google Sheets successful',
+                'worksheet_info': worksheet_info
+            }
+        
+        except Exception as e:
+            logger.error(f"Google Sheets connection test failed: {e}")
+            return {
+                'status': 'error',
+                'message': f'Connection failed: {e}',
+                'worksheet_info': None
             }
     
     def _format_appointment_data(self, record: Dict[str, Any]) -> Dict[str, Any]:
