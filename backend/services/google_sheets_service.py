@@ -1,41 +1,120 @@
 import gspread
-from google.auth.transport.requests import Request
-from google.oauth2.service_account import Credentials
 import os
-import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from datetime import datetime, date, time
-import asyncio
-import pandas as pd
+from google.oauth2.service_account import Credentials
+import json
+from functools import wraps
+import time as time_module
+import random
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def retry_with_backoff(max_retries: int = 3, base_delay: float = 1.0, 
+                      max_delay: float = 60.0, exponential_factor: float = 2.0):
+    """Decorator that implements exponential backoff retry logic."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_retries:
+                        logger.error(f"Max retries exceeded for {func.__name__}: {e}")
+                        raise
+                    
+                    # Calculate delay with exponential backoff and jitter
+                    delay = min(base_delay * (exponential_factor ** attempt), max_delay)
+                    jitter = random.uniform(0.1, 0.9) * delay
+                    total_delay = delay + jitter
+                    
+                    logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}: {e}. "
+                                  f"Retrying in {total_delay:.2f} seconds...")
+                    time_module.sleep(total_delay)
+            
+            return None
+        return wrapper
+    return decorator
+
+class GoogleSheetsError(Exception):
+    """Base exception for Google Sheets integration errors."""
+    def __init__(self, message: str, error_code: str = None, details: dict = None):
+        self.message = message
+        self.error_code = error_code
+        self.details = details or {}
+        super().__init__(self.message)
+
 class GoogleSheetsService:
-    def __init__(self):
+    """Service for managing Google Sheets integration for agenda synchronization."""
+    
+    def __init__(self, credentials_path: str = None, spreadsheet_id: str = None):
+        """Initialize Google Sheets service."""
+        self.credentials_path = credentials_path or os.getenv('GOOGLE_CREDENTIALS_PATH')
+        self.spreadsheet_id = spreadsheet_id or os.getenv('GOOGLE_SPREADSHEET_ID')
+        self.scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
         self.client = None
         self.worksheet = None
-        self.spreadsheet_id = "1MBDBHQ08XGuf5LxVHCFhHDagIazFkpBnxwqyEQIBJrQ"
-        self.sheet_name = "Hoja 1"
-        self.columns = [
-            'Registro', 'CitMod', 'FechaAlta', 'NumPac', 'Apellidos', 
-            'Nombre', 'TelMovil', 'Fecha', 'Hora', 'EstadoCita', 
-            'Tratamiento', 'Odontologo', 'Notas', 'Duracion'
-        ]
-        self._init_client()
-    
-    def _init_client(self):
-        """Initialize Google Sheets client with service account credentials"""
+        self.last_sync_time = None
+        self.sync_stats = {
+            'successful_syncs': 0,
+            'failed_syncs': 0,
+            'last_error': None
+        }
+        
+        # Initialize client
+        self._authenticate()
+        
+    def _authenticate(self):
+        """Authenticate with Google Sheets API using service account."""
         try:
-            # For demo purposes, we'll create a mock service account
-            # In production, this would use actual Google service account credentials
-            logger.info("Initializing Google Sheets client (Demo Mode)")
-            # Mock client initialization
-            self.client = None
-            logger.info("Google Sheets client initialized successfully")
+            if not self.credentials_path or not os.path.exists(self.credentials_path):
+                raise GoogleSheetsError(f"Credentials file not found: {self.credentials_path}")
+            
+            # Load credentials
+            credentials = Credentials.from_service_account_file(
+                self.credentials_path, 
+                scopes=self.scopes
+            )
+            
+            # Create client
+            self.client = gspread.authorize(credentials)
+            logger.info("Successfully authenticated with Google Sheets API")
+            
+            # Get worksheet
+            if self.spreadsheet_id:
+                self._get_worksheet()
+            
         except Exception as e:
-            logger.error(f"Failed to initialize Google Sheets client: {str(e)}")
-            self.client = None
+            logger.error(f"Failed to authenticate with Google Sheets API: {e}")
+            raise GoogleSheetsError(f"Authentication failed: {e}")
+    
+    def _get_worksheet(self, worksheet_name: str = None):
+        """Get the worksheet (first sheet by default)."""
+        try:
+            spreadsheet = self.client.open_by_key(self.spreadsheet_id)
+            if worksheet_name:
+                self.worksheet = spreadsheet.worksheet(worksheet_name)
+            else:
+                self.worksheet = spreadsheet.sheet1
+            
+            logger.info(f"Connected to worksheet: {self.worksheet.title}")
+            
+        except gspread.SpreadsheetNotFound:
+            logger.error(f"Spreadsheet not found: {self.spreadsheet_id}")
+            raise GoogleSheetsError(f"Spreadsheet not found: {self.spreadsheet_id}")
+        except gspread.WorksheetNotFound:
+            logger.error(f"Worksheet not found: {worksheet_name}")
+            raise GoogleSheetsError(f"Worksheet not found: {worksheet_name}")
+        except Exception as e:
+            logger.error(f"Failed to get worksheet: {e}")
+            raise GoogleSheetsError(f"Failed to get worksheet: {e}")
     
     async def get_all_appointments(self) -> List[Dict[str, Any]]:
         """Get all appointments from the Google Sheet"""
