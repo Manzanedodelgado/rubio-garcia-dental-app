@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Continue with WhatsApp integration development for DenApp Control - Start the WhatsApp service and create a React component to display the QR code and connection status"
+user_problem_statement: "Sincroniza la agenda con la hoja de Google Sheets - Implement Google Sheets integration for agenda synchronization with auto-sync every 5 minutes and editable appointment states"
 
 backend:
   - task: "WhatsApp Node.js Service"
