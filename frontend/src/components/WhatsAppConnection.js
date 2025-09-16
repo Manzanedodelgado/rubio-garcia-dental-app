@@ -159,6 +159,9 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       const authToken = localStorage.getItem('token');
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
       
+      console.log('🚀 Fetching WhatsApp status from:', `${API}/whatsapp/status`);
+      console.log('🔑 Using auth token:', authToken ? 'YES' : 'NO');
+      
       const [statusResponse, qrResponse] = await Promise.all([
         axios.get(`${API}/whatsapp/status`, { headers }),
         axios.get(`${API}/whatsapp/qr`, { headers })
@@ -167,7 +170,8 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       const status = statusResponse.data;
       const qrData = qrResponse.data;
 
-      console.log('🔍 Connection status received:', status);
+      console.log('✅ Raw status response:', JSON.stringify(status, null, 2));
+      console.log('✅ Raw QR response:', JSON.stringify(qrData, null, 2));
       
       setConnectionStatus(status.status);
       setConnectedUser(status.user);
@@ -177,6 +181,7 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       const currentUser = localStorage.getItem('currentUser');
       if (currentUser === 'JMD') {
         localStorage.setItem('whatsapp_status', status.status);
+        console.log('💾 Saved status for JMD:', status.status);
       }
 
       if (qrData.qr && (status.status === 'connecting' || status.status === 'disconnected')) {
@@ -188,7 +193,8 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       }
 
     } catch (error) {
-      console.error('Error fetching WhatsApp status:', error);
+      console.error('❌ Error fetching WhatsApp status:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
       setError('Error al conectar con el servicio de WhatsApp');
       // Don't set to error immediately, might be temporary
       if (connectionStatus === 'disconnected') {
