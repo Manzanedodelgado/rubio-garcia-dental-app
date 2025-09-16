@@ -99,28 +99,64 @@ const WhatsAppModuleSimple = () => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
 
+    const tempMessage = {
+      id: Date.now(),
+      message: newMessage,
+      timestamp: new Date(),
+      type: 'outgoing',
+      status: 'sending',
+      temp: true // Mark as temporary
+    };
+
+    // Add to pending messages
+    setPendingMessages(prev => [...prev, tempMessage]);
+    
+    // Add to messages immediately for UI
+    setMessages(prev => [...prev, tempMessage]);
+    
+    const messageText = newMessage;
+    setNewMessage('');
+
     try {
       const authToken = localStorage.getItem('token');
+      
+      // Send via WhatsApp
       await axios.post(`${API}/whatsapp/send-real`, {
         phone_number: selectedChat.phone,
-        message: newMessage
+        message: messageText
       }, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
-      // Add message to local state
-      setMessages(prev => [...prev, {
-        id: Date.now(),
-        message: newMessage,
-        timestamp: new Date(),
-        type: 'outgoing',
+      // Save to database
+      await axios.post(`${API}/whatsapp/messages`, {
+        contact_id: selectedChat.id,
+        contact_name: selectedChat.contact,
+        phone_number: selectedChat.phone,
+        message: messageText,
+        message_type: 'outgoing',
         status: 'sent'
-      }]);
+      }, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
 
-      setNewMessage('');
-      console.log('✅ Message sent successfully');
+      // Update message status to sent
+      setMessages(prev => prev.map(m => 
+        m.id === tempMessage.id ? { ...m, status: 'sent', temp: false } : m
+      ));
+      
+      // Remove from pending
+      setPendingMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+
+      console.log('✅ Message sent and saved successfully');
     } catch (error) {
       console.error('❌ Error sending message:', error);
+      
+      // Update message status to error
+      setMessages(prev => prev.map(m => 
+        m.id === tempMessage.id ? { ...m, status: 'error' } : m
+      ));
+      
       alert('Error al enviar mensaje');
     }
   };
