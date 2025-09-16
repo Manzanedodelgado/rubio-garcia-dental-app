@@ -727,13 +727,24 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     }).sort("hora", 1).to_list(10)
     
     # Urgent messages
-    urgent_messages = await db.whatsapp_messages.find({
+    urgent_messages_cursor = db.whatsapp_messages.find({
         "$or": [
             {"tag_color": "red"},
             {"urgency_level": {"$gte": 7}}
         ],
         "message_type": "incoming"
-    }).sort("timestamp", -1).to_list(5)
+    }).sort("timestamp", -1).limit(5)
+    
+    urgent_messages = []
+    async for msg in urgent_messages_cursor:
+        urgent_messages.append({
+            "id": msg.get("id"),
+            "contact_name": msg.get("contact_name"),
+            "phone_number": msg.get("phone_number"),
+            "message": msg.get("message", "")[:50] + "..." if len(msg.get("message", "")) > 50 else msg.get("message", ""),
+            "timestamp": msg.get("timestamp"),
+            "urgency_level": msg.get("urgency_level", 1)
+        })
     
     return {
         "today_appointments": today_appointments,
