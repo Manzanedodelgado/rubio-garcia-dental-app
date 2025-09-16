@@ -18,6 +18,11 @@ const WhatsAppModuleSimple = () => {
   const [loading, setLoading] = useState(true);
   const [pendingMessages, setPendingMessages] = useState([]); // Messages waiting to be confirmed
   const messagesEndRef = useRef(null); // Reference for auto-scroll
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [patients, setPatients] = useState([]);
+  const [patientSearch, setPatientSearch] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualName, setManualName] = useState('');
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
