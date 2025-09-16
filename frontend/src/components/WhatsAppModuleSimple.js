@@ -335,6 +335,18 @@ const WhatsAppModuleSimple = () => {
     }
   }, [selectedChat, connectionStatus]);
 
+  // Close options menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowOptionsMenu(null);
+    };
+    
+    if (showOptionsMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showOptionsMenu]);
+
   // Select chat
   const selectChat = (chat) => {
     setSelectedChat(chat);
