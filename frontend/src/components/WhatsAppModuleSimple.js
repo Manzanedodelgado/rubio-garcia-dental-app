@@ -167,31 +167,55 @@ const WhatsAppModuleSimple = () => {
       const authToken = localStorage.getItem('token');
       console.log('📨 Loading messages for chat:', chatId);
       
-      // Get all messages first
+      // Get all messages from backend
       const response = await axios.get(`${API}/whatsapp/messages`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
       
       console.log('📨 All messages received:', response.data.length);
       
-      // Filter messages for this specific contact
-      const messagesData = response.data
+      // Filter messages for this specific contact from backend
+      const backendMessages = response.data
         .filter(msg => msg.phone_number === chatId)
         .map(msg => ({
-          id: msg.id || Date.now() + Math.random(),
+          id: msg.id || `backend-${Date.now()}-${Math.random()}`,
           message: msg.message,
           timestamp: new Date(msg.timestamp),
           type: msg.message_type === 'incoming' ? 'incoming' : 'outgoing',
-          status: msg.status || 'sent'
+          status: msg.status || 'sent',
+          temp: false
         }))
         .sort((a, b) => a.timestamp - b.timestamp);
       
-      console.log('📨 Filtered messages for', chatId, ':', messagesData.length);
-      setMessages(messagesData);
+      // Get current pending messages for this chat
+      const currentPendingMessages = pendingMessages.filter(msg => 
+        messages.some(m => m.id === msg.id && m.temp)
+      );
+      
+      // Combine backend messages with pending messages, avoiding duplicates
+      const combinedMessages = [...backendMessages];
+      
+      // Add pending messages that aren't already in backend
+      currentPendingMessages.forEach(pendingMsg => {
+        const exists = backendMessages.some(backendMsg => 
+          backendMsg.message === pendingMsg.message && 
+          Math.abs(backendMsg.timestamp - pendingMsg.timestamp) < 10000 // Within 10 seconds
+        );
+        
+        if (!exists) {
+          combinedMessages.push(pendingMsg);
+        }
+      });
+      
+      // Sort all messages by timestamp
+      combinedMessages.sort((a, b) => a.timestamp - b.timestamp);
+      
+      console.log('📨 Final combined messages for', chatId, ':', combinedMessages.length);
+      setMessages(combinedMessages);
       
     } catch (error) {
       console.error('❌ Error loading messages:', error);
-      setMessages([]);
+      // Keep existing messages on error to avoid losing pending messages
     }
   };
 
