@@ -229,13 +229,25 @@ backend:
         comment: "Persistent issues with message receiving, contact syncing, and overall reliability - deprioritized in favor of Google Sheets integration"
 
 frontend:
+  - task: "Agenda Module Integration"
+    implemented: false
+    working: "NA"
+    file: "/app/frontend/src/components/AgendaModule.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to update existing AgendaModule.js to integrate with new Google Sheets API endpoints"
+
   - task: "WhatsApp Connection Component"
     implemented: true
     working: false
     file: "/app/frontend/src/components/WhatsAppConnection.js"
-    stuck_count: 1
-    priority: "high"
-    needs_retesting: true
+    stuck_count: 2
+    priority: "low"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -243,14 +255,17 @@ frontend:
       - working: false
         agent: "user"
         comment: "CRITICAL ISSUES REPORTED: Se desconecta cuando cambias de pestaña, No permite buscar contacto en Pacientes para iniciar conversación ni añadir numero de forma manual, No envía mensajes, No guarda historial de conversacion, No permite agregar a contacto de Pacientes desde una conversacion de WhatsApp, Se ha aplicado la IA a pesar de estar desconectada, La rueda de configurar no tiene ningún función, No permite editar la información que ve el paciente de nuestro perfil de WhatsApp ni la imagen"
+      - working: false
+        agent: "user"
+        comment: "Deprioritized - focus shifted to Google Sheets integration due to persistent WhatsApp issues"
 
   - task: "WhatsApp Module Update"
     implemented: true
     working: false
     file: "/app/frontend/src/components/WhatsAppModule.js"
-    stuck_count: 1
-    priority: "high"
-    needs_retesting: true
+    stuck_count: 2
+    priority: "low"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -258,6 +273,9 @@ frontend:
       - working: false
         agent: "user"
         comment: "Multiple critical failures reported - disconnection issues, no message sending, no contact search, no history saving, non-functional configuration, missing profile editing features"
+      - working: false
+        agent: "user"
+        comment: "Deprioritized - focus shifted to Google Sheets integration due to persistent WhatsApp issues"
 
 metadata:
   created_by: "main_agent"
