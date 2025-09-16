@@ -709,9 +709,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     
     # Urgent messages
     urgent_messages = await db.whatsapp_messages.find({
-        "tag_color": "red",
-        "status": "pending"
-    }).to_list(5)
+        "$or": [
+            {"tag_color": "red"},
+            {"urgency_level": {"$gte": 7}}
+        ],
+        "message_type": "incoming"
+    }).sort("timestamp", -1).to_list(5)
     
     return {
         "today_appointments": today_appointments,
