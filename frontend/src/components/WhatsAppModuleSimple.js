@@ -643,10 +643,10 @@ const WhatsAppModuleSimple = () => {
                     messages.map(message => (
                       <div
                         key={message.id}
-                        className={`flex ${message.type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex group ${message.type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                          className={`relative max-w-xs px-4 py-2 rounded-lg ${
                             message.type === 'outgoing'
                               ? 'bg-blue-500 text-white'
                               : 'bg-gray-200 text-gray-900'
@@ -671,6 +671,17 @@ const WhatsAppModuleSimple = () => {
                               </span>
                             )}
                           </div>
+
+                          {/* Message Options */}
+                          {message.type === 'outgoing' && !message.temp && (
+                            <button
+                              onClick={() => deleteMessage(message.id)}
+                              className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-all"
+                              title="Eliminar mensaje"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
