@@ -444,7 +444,19 @@ const WhatsAppModuleSimple = () => {
           {/* Conversations List */}
           <div className="w-1/3 border-r border-gray-200">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Conversaciones</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Conversaciones</h3>
+                <button
+                  onClick={() => {
+                    setShowNewChatDialog(true);
+                    loadPatients();
+                  }}
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Nueva conversación"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             <div className="overflow-y-auto h-80">
