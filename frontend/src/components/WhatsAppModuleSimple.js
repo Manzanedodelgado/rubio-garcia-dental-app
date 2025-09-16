@@ -283,6 +283,8 @@ const WhatsAppModuleSimple = () => {
   const selectChat = (chat) => {
     setSelectedChat(chat);
     loadMessages(chat.id);
+    // Scroll to bottom when selecting a new chat
+    setTimeout(scrollToBottom, 100);
   };
 
   if (loading) {
