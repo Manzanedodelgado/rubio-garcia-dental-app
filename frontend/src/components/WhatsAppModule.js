@@ -140,6 +140,20 @@ const WhatsAppModule = () => {
       });
 
       alert(`${contactForm.nombre} ${contactForm.apellidos} ha sido agregado a la lista de pacientes`);
+      
+      // Update the conversation name with the new patient name
+      const fullName = `${contactForm.nombre} ${contactForm.apellidos}`;
+      setConversations(prev => prev.map(c => 
+        c.id === editingContact.id ? { ...c, contact: fullName } : c
+      ));
+      
+      // Update selected chat if it's the same contact
+      if (selectedChat && selectedChat.id === editingContact.id) {
+        setSelectedChat(prev => ({ ...prev, contact: fullName }));
+        // Refresh patient info to show updated data
+        fetchPatientInfo(selectedChat.phone);
+      }
+      
       setShowEditContactDialog(false);
       setEditingContact(null);
       setContactForm({
