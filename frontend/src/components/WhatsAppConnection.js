@@ -10,7 +10,15 @@ const API = `${BACKEND_URL}/api`;
 
 const WhatsAppConnection = ({ onConnectionChange }) => {
   const [qrCode, setQrCode] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState(() => {
+    // For JMD user, try to restore connection status from localStorage
+    const currentUser = localStorage.getItem('currentUser');
+    const savedStatus = localStorage.getItem('whatsapp_status');
+    if (currentUser === 'JMD' && savedStatus) {
+      return savedStatus;
+    }
+    return 'disconnected';
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(new Date());
