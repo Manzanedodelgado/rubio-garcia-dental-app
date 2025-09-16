@@ -295,6 +295,91 @@ const WhatsAppModuleSimple = () => {
     setTimeout(scrollToBottom, 100);
   };
 
+  // Load patients for new conversation
+  const loadPatients = async () => {
+    try {
+      const authToken = localStorage.getItem('token');
+      const response = await axios.get(`${API}/patients`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
+      setPatients(response.data);
+      console.log('📋 Patients loaded:', response.data.length);
+    } catch (error) {
+      console.error('❌ Error loading patients:', error);
+      setPatients([]);
+    }
+  };
+
+  // Start new conversation with patient
+  const startConversationWithPatient = (patient) => {
+    if (!patient.tel_movil) {
+      alert('Este paciente no tiene número de teléfono registrado');
+      return;
+    }
+    
+    const newChat = {
+      id: patient.tel_movil,
+      contact: `${patient.nombre} ${patient.apellidos}`,
+      phone: patient.tel_movil,
+      lastMessage: 'Nueva conversación iniciada',
+      timestamp: new Date(),
+      unread: false
+    };
+
+    // Add to conversations if not exists
+    setConversations(prev => {
+      const exists = prev.find(c => c.id === newChat.id);
+      if (exists) {
+        return prev;
+      }
+      return [newChat, ...prev];
+    });
+
+    // Select the new chat
+    selectChat(newChat);
+    setShowNewChatDialog(false);
+    setPatientSearch('');
+    
+    console.log('✅ New conversation started with patient:', patient.nombre);
+  };
+
+  // Start manual conversation
+  const startManualConversation = () => {
+    if (!manualPhone.trim()) {
+      alert('Por favor ingresa un número de teléfono');
+      return;
+    }
+
+    const cleanPhone = manualPhone.replace(/\D/g, ''); // Remove non-digits
+    const displayName = manualName.trim() || cleanPhone;
+    
+    const newChat = {
+      id: cleanPhone,
+      contact: displayName,
+      phone: cleanPhone,
+      lastMessage: 'Nueva conversación iniciada',
+      timestamp: new Date(),
+      unread: false
+    };
+
+    // Add to conversations if not exists
+    setConversations(prev => {
+      const exists = prev.find(c => c.id === newChat.id);
+      if (exists) {
+        return prev;
+      }
+      return [newChat, ...prev];
+    });
+
+    // Select the new chat
+    selectChat(newChat);
+    setShowNewChatDialog(false);
+    setManualPhone('');
+    setManualName('');
+    
+    console.log('✅ New manual conversation started with:', cleanPhone);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
