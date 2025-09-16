@@ -703,7 +703,7 @@ const Patients = () => {
 
 // Import all modules
 import AgendaModule from './components/AgendaModule';
-import WhatsAppModule from './components/WhatsAppModule';
+import WhatsAppModuleSimple from './components/WhatsAppModuleSimple';
 import RecordatoriosModule from './components/RecordatoriosModule';
 import PlantillasModule from './components/PlantillasModule';
 import AutomatizacionesModule from './components/AutomatizacionesModule';
