@@ -828,6 +828,34 @@ async def get_whatsapp_qr(current_user: dict = Depends(get_current_user)):
     from services.whatsapp_service import whatsapp_service
     return await whatsapp_service.get_qr_code()
 
+@api_router.delete("/whatsapp/messages/conversation/{phone_number}")
+async def delete_conversation(
+    phone_number: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete all messages for a conversation"""
+    try:
+        result = await db.whatsapp_messages.delete_many({"phone_number": phone_number})
+        return {"status": "success", "deleted_count": result.deleted_count}
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting conversation")
+
+@api_router.delete("/whatsapp/messages/{message_id}")
+async def delete_message(
+    message_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a single message"""
+    try:
+        result = await db.whatsapp_messages.delete_one({"id": message_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Message not found")
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error deleting message: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting message")
+
 @api_router.put("/whatsapp/messages/tag")
 async def update_message_tags(
     tag_data: Dict[str, Any],
