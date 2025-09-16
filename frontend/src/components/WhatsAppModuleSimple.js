@@ -167,15 +167,40 @@ const WhatsAppModuleSimple = () => {
     loadConversations();
     
     // For JMD user, check connection more frequently
-    const interval = setInterval(() => {
+    const connectionInterval = setInterval(() => {
       if (currentUser === 'JMD') {
         checkConnection();
         loadConversations();
+        
+        // If there's a selected chat, refresh its messages
+        if (selectedChat) {
+          loadMessages(selectedChat.id);
+        }
       }
-    }, 30000);
+    }, 10000); // Check every 10 seconds for new messages
     
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(connectionInterval);
+  }, [selectedChat]);
+
+  // Separate effect for message polling when chat is selected
+  useEffect(() => {
+    if (selectedChat && connectionStatus === 'connected') {
+      console.log('📨 Starting message polling for:', selectedChat.id);
+      
+      // Load messages immediately
+      loadMessages(selectedChat.id);
+      
+      // Set up polling for this specific chat
+      const messageInterval = setInterval(() => {
+        loadMessages(selectedChat.id);
+      }, 5000); // Check for new messages every 5 seconds
+      
+      return () => {
+        console.log('📨 Stopping message polling for:', selectedChat.id);
+        clearInterval(messageInterval);
+      };
+    }
+  }, [selectedChat, connectionStatus]);
 
   // Select chat
   const selectChat = (chat) => {
