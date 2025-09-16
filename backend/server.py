@@ -684,8 +684,11 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     
     # Pending WhatsApp messages
     pending_messages = await db.whatsapp_messages.count_documents({
-        "status": "pending",
-        "message_type": "incoming"
+        "message_type": "incoming",
+        "$or": [
+            {"status": "pending"},
+            {"status": "received"}
+        ]
     })
     
     # Total patients
