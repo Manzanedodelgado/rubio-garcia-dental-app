@@ -23,6 +23,8 @@ const WhatsAppModuleSimple = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [manualPhone, setManualPhone] = useState('');
   const [manualName, setManualName] = useState('');
+  const [showOptionsMenu, setShowOptionsMenu] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   // Auto-scroll to bottom when messages change
   const scrollToBottom = () => {
