@@ -91,13 +91,31 @@ const WhatsAppModuleSimple = () => {
       const patientNamesMap = new Map();
       patientsData.forEach(patient => {
         if (patient.tel_movil) {
-          // Clean phone number for comparison
+          // Clean phone number for comparison - try multiple formats
+          const originalPhone = patient.tel_movil;
           const cleanPhone = patient.tel_movil.replace(/\D/g, '');
-          patientNamesMap.set(cleanPhone, `${patient.nombre} ${patient.apellidos}`);
+          const patientName = `${patient.nombre} ${patient.apellidos}`;
+          
+          // Store multiple phone formats for better matching
+          patientNamesMap.set(originalPhone, patientName);
+          patientNamesMap.set(cleanPhone, patientName);
+          
+          // Also store without country code (34 for Spain)
+          if (cleanPhone.startsWith('34') && cleanPhone.length > 11) {
+            const withoutCountryCode = cleanPhone.substring(2);
+            patientNamesMap.set(withoutCountryCode, patientName);
+          }
+          
+          // Store with country code if it doesn't have it
+          if (!cleanPhone.startsWith('34') && cleanPhone.length === 9) {
+            const withCountryCode = '34' + cleanPhone;
+            patientNamesMap.set(withCountryCode, patientName);
+          }
         }
       });
 
       console.log('📋 Patient names map created:', patientNamesMap.size);
+      console.log('📋 Map contents:', Array.from(patientNamesMap.entries()));
 
       // Group messages by phone number to create conversations
       const conversationsMap = new Map();
