@@ -49,6 +49,37 @@ const WhatsAppModule = () => {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
+    // Force connection check for JMD user
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser === 'JMD') {
+      console.log('👤 JMD user detected - checking WhatsApp backend status');
+      
+      const checkBackendConnection = async () => {
+        try {
+          const authToken = localStorage.getItem('token');
+          const response = await axios.get(`${API}/whatsapp/status`, {
+            headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+          });
+          
+          console.log('📡 Backend WhatsApp status:', response.data);
+          
+          if (response.data.status === 'connected') {
+            setConnectionStatus('connected');
+            setConnectedUser(response.data.user);
+            localStorage.setItem('whatsapp_connected', 'true');
+          }
+        } catch (error) {
+          console.error('❌ Failed to check backend WhatsApp status:', error);
+        }
+      };
+      
+      checkBackendConnection();
+      
+      // Check every 30 seconds for JMD user
+      const interval = setInterval(checkBackendConnection, 30000);
+      return () => clearInterval(interval);
+    }
+    
     fetchConversations();
     
     // Setup message polling interval
