@@ -285,14 +285,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "WhatsApp Connection Component"
-    - "WhatsApp Module Update"
-    - "WhatsApp Backend Integration"
-  stuck_tasks:
-    - "WhatsApp Connection Component"
-    - "WhatsApp Module Update"
+    - "Google Sheets API Authentication"
+    - "Google Sheets Integration Service"
+    - "Automatic Synchronization Service"
+    - "Agenda API Routes"
+    - "Server Integration"
+  stuck_tasks: []
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
