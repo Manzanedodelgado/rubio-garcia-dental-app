@@ -662,17 +662,35 @@ async def update_clinic_settings(settings: ClinicSettings, current_user: dict = 
 
 @api_router.post("/settings/upload-logo")
 async def upload_logo(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
-    # In a real implementation, save to file storage service
-    # For now, simulate URL
-    logo_url = f"/uploads/logo_{uuid.uuid4()}.{file.filename.split('.')[-1]}"
-    
-    await db.clinic_settings.update_one(
-        {},
-        {"$set": {"logo_url": logo_url}},
-        upsert=True
-    )
-    
-    return {"logo_url": logo_url}
+    try:
+        # Create uploads directory if it doesn't exist
+        uploads_dir = ROOT_DIR / "uploads"
+        uploads_dir.mkdir(exist_ok=True)
+        
+        # Generate unique filename
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+        unique_filename = f"logo_{uuid.uuid4()}.{file_extension}"
+        file_path = uploads_dir / unique_filename
+        
+        # Save file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Generate accessible URL
+        logo_url = f"/uploads/{unique_filename}"
+        
+        # Update database
+        await db.clinic_settings.update_one(
+            {},
+            {"$set": {"logo_url": logo_url}},
+            upsert=True
+        )
+        
+        return {"logo_url": logo_url}
+    except Exception as e:
+        logger.error(f"Error uploading logo: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error uploading file")
 
 # Dashboard Routes
 @api_router.get("/dashboard/stats")
