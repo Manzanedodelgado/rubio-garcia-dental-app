@@ -560,24 +560,57 @@ const WhatsAppModuleSimple = () => {
               {conversations.map(chat => (
                 <div
                   key={chat.id}
-                  onClick={() => selectChat(chat)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                  className={`relative group border-b border-gray-100 hover:bg-gray-50 ${
                     selectedChat?.id === chat.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      <User className="w-5 h-5" />
+                  <div
+                    onClick={() => selectChat(chat)}
+                    className="p-4 cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{chat.contact}</p>
+                        <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
+                        <p className="text-xs text-gray-400">
+                          {chat.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                      {chat.unread && (
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{chat.contact}</p>
-                      <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
-                      <p className="text-xs text-gray-400">
-                        {chat.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
-                    {chat.unread && (
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+
+                  {/* Options Menu */}
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowOptionsMenu(showOptionsMenu === chat.id ? null : chat.id);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                    
+                    {showOptionsMenu === chat.id && (
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDeleteConfirm(chat.id);
+                            setShowOptionsMenu(null);
+                          }}
+                          className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 w-full text-left"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Eliminar conversación</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
