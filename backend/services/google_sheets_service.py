@@ -116,26 +116,49 @@ class GoogleSheetsService:
             logger.error(f"Failed to get worksheet: {e}")
             raise GoogleSheetsError(f"Failed to get worksheet: {e}")
     
-    async def get_all_appointments(self) -> List[Dict[str, Any]]:
-        """Get all appointments from the Google Sheet"""
+    @retry_with_backoff(max_retries=3)
+    def read_agenda_data(self):
+        """Read all agenda data from Google Sheets."""
+        from models.agenda import AgendaItem
+        
         try:
-            if not self.client:
-                # Return mock data for demo
-                return self._get_mock_appointments()
+            if not self.worksheet:
+                self._get_worksheet()
             
-            # In production, this would fetch from actual Google Sheets
-            worksheet = self.client.open_by_key(self.spreadsheet_id).worksheet(self.sheet_name)
-            records = worksheet.get_all_records()
+            # Get all records as dictionaries
+            records = self.worksheet.get_all_records()
+            logger.info(f"Retrieved {len(records)} records from Google Sheets")
             
-            appointments = []
-            for record in records:
-                if record.get('Fecha'):  # Only include records with dates
-                    appointments.append(self._format_appointment_data(record))
+            # Convert to AgendaItem objects
+            agenda_items = []
+            for i, record in enumerate(records):
+                try:
+                    # Skip empty rows
+                    if not any(str(value).strip() for value in record.values()):
+                        continue
+                    
+                    agenda_item = AgendaItem.from_sheets_row(record)
+                    agenda_items.append(agenda_item)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to parse row {i + 2}: {record}. Error: {e}")
+                    continue
             
-            return appointments
+            logger.info(f"Successfully parsed {len(agenda_items)} agenda items")
+            self.last_sync_time = datetime.utcnow()
+            self.sync_stats['successful_syncs'] += 1
+            
+            return agenda_items
+        
         except Exception as e:
-            logger.error(f"Error fetching appointments from Google Sheets: {str(e)}")
-            return []
+            logger.error(f"Failed to read agenda data: {e}")
+            self.sync_stats['failed_syncs'] += 1
+            self.sync_stats['last_error'] = str(e)
+            raise GoogleSheetsError(f"Failed to read agenda data: {e}")
+    
+    async def get_all_appointments(self):
+        """Alias for read_agenda_data for backward compatibility."""
+        return self.read_agenda_data()
     
     async def get_appointments_by_date(self, target_date: str) -> List[Dict[str, Any]]:
         """Get appointments for a specific date"""
