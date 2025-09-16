@@ -70,20 +70,51 @@ const WhatsAppModuleSimple = () => {
   const loadConversations = async () => {
     try {
       const authToken = localStorage.getItem('token');
-      const response = await axios.get(`${API}/whatsapp/messages`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      
+      // Load messages and patients in parallel
+      const [messagesResponse, patientsResponse] = await Promise.all([
+        axios.get(`${API}/whatsapp/messages`, {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        }),
+        axios.get(`${API}/patients`, {
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        })
+      ]);
+
+      const messagesData = messagesResponse.data;
+      const patientsData = patientsResponse.data;
+      
+      // Create a map of phone numbers to patient names
+      const patientNamesMap = new Map();
+      patientsData.forEach(patient => {
+        if (patient.tel_movil) {
+          // Clean phone number for comparison
+          const cleanPhone = patient.tel_movil.replace(/\D/g, '');
+          patientNamesMap.set(cleanPhone, `${patient.nombre} ${patient.apellidos}`);
+        }
       });
 
+      console.log('📋 Patient names map created:', patientNamesMap.size);
+
       // Group messages by phone number to create conversations
-      const messagesData = response.data;
       const conversationsMap = new Map();
       
       messagesData.forEach(msg => {
         const key = msg.phone_number;
+        const cleanKey = key.replace(/\D/g, '');
+        
+        // Use patient name if available, otherwise use contact_name or phone number
+        let displayName = msg.contact_name || key;
+        if (patientNamesMap.has(cleanKey)) {
+          displayName = patientNamesMap.get(cleanKey);
+        } else if (patientNamesMap.has(key)) {
+          displayName = patientNamesMap.get(key);
+        }
+        
         if (!conversationsMap.has(key)) {
           conversationsMap.set(key, {
             id: key,
-            contact: msg.contact_name || key,
+            contact: displayName,
             phone: key,
             lastMessage: msg.message,
             timestamp: new Date(msg.timestamp),
@@ -93,6 +124,10 @@ const WhatsAppModuleSimple = () => {
         } else {
           const conv = conversationsMap.get(key);
           conv.messageCount++;
+          // Update display name if we found a better one
+          if (displayName !== key && conv.contact === key) {
+            conv.contact = displayName;
+          }
           if (new Date(msg.timestamp) > conv.timestamp) {
             conv.lastMessage = msg.message;
             conv.timestamp = new Date(msg.timestamp);
@@ -106,7 +141,7 @@ const WhatsAppModuleSimple = () => {
         .sort((a, b) => b.timestamp - a.timestamp);
       
       setConversations(sortedConversations);
-      console.log('📋 Conversations loaded:', sortedConversations.length);
+      console.log('📋 Conversations loaded with patient names:', sortedConversations.length);
       
     } catch (error) {
       console.error('❌ Error loading conversations:', error);
