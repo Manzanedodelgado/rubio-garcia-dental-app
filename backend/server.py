@@ -1097,6 +1097,10 @@ async def update_google_sheets_appointment(appointment_id: str, appointment: App
     result = await google_sheets_service.update_appointment(appointment_id, appointment_dict)
     return result
 
+# Include agenda router
+from routes.agenda import router as agenda_router
+app.include_router(agenda_router)
+
 # Include router
 app.include_router(api_router)
 
