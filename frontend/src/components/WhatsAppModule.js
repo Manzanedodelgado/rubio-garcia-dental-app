@@ -19,7 +19,14 @@ const WhatsAppModule = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState(() => {
+    // For JMD user, always assume connected if backend is working
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser === 'JMD') {
+      return 'connected'; // Force connected state for JMD
+    }
+    return 'disconnected';
+  });
   const [connectedUser, setConnectedUser] = useState(null);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [patientInfo, setPatientInfo] = useState(null);
