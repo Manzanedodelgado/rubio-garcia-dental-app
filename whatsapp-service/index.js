@@ -85,6 +85,9 @@ async function initWhatsApp() {
                 qrCode = null
                 qrCodeExpiry = null
                 
+                // Start keepalive to prevent disconnection
+                startKeepalive()
+                
                 // Notify FastAPI about connection
                 try {
                     await axios.post(`${FASTAPI_URL}/api/whatsapp/connected`, {
