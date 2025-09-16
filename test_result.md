@@ -215,3 +215,5 @@ agent_communication:
     message: "BUGS PERSISTEN DESPUÉS DE FIXES: 1) No recibe mensajes, 2) Cuando guarda contacto no actualiza los datos en WhatsApp referente a ese contacto, 3) Las imágenes subidas en configuración tanto en WhatsApp como en pestaña de configuración no aplica, 4) Se desconecta cuando cambias de pestaña, 5) Las conversaciones calificadas como rojo o azul no se visualiza en Panel de control, 6) Mensaje automático enviado cuando no está activa la IA y ese mensaje no aparece en whatsapp"
   - agent: "main"
     message: "Previous fixes incomplete. Starting deep diagnosis: 1) Message receiving mechanism broken, 2) Contact sync not working, 3) Image upload/display broken, 4) Connection stability still failing, 5) Dashboard urgency propagation not working, 6) AI control logic still failing. Implementing comprehensive solutions."
+  - agent: "main"
+    message: "Pivoting focus from WhatsApp issues to Google Sheets integration as requested by user. Implementing agenda synchronization with Google Sheets API, automatic sync every 5 minutes, and complete CRUD operations for appointment management."
