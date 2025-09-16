@@ -323,27 +323,39 @@ const WhatsAppModuleSimple = () => {
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
-                    >
+                  {messages.length > 0 ? (
+                    messages.map(message => (
                       <div
-                        className={`max-w-xs px-4 py-2 rounded-lg ${
-                          message.type === 'outgoing'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-200 text-gray-900'
-                        }`}
+                        key={message.id}
+                        className={`flex ${message.type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm">{message.message}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.type === 'outgoing' ? 'text-blue-100' : 'text-gray-500'
-                        }`}>
-                          {message.timestamp.toLocaleTimeString()}
+                        <div
+                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                            message.type === 'outgoing'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-200 text-gray-900'
+                          }`}
+                        >
+                          <p className="text-sm">{message.message}</p>
+                          <p className={`text-xs mt-1 ${
+                            message.type === 'outgoing' ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      <div className="text-center">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <p>No hay mensajes aún</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Los mensajes aparecerán aquí cuando lleguen
                         </p>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {/* Message Input */}
