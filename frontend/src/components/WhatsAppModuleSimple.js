@@ -608,6 +608,150 @@ const WhatsAppModuleSimple = () => {
           </div>
         </div>
       )}
+
+      {/* New Chat Dialog */}
+      {showNewChatDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Nueva Conversación</h2>
+              <button
+                onClick={() => setShowNewChatDialog(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Manual Number Input */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                  <Smartphone className="w-5 h-5 mr-2 text-blue-600" />
+                  Número Manual
+                </h3>
+                <div className="space-y-3">
+                  <input
+                    type="tel"
+                    placeholder="Número de teléfono (ej: 664123456)"
+                    value={manualPhone}
+                    onChange={(e) => setManualPhone(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nombre (opcional)"
+                    value={manualName}
+                    onChange={(e) => setManualName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    onClick={startManualConversation}
+                    disabled={!manualPhone.trim()}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Iniciar Conversación
+                  </button>
+                </div>
+              </div>
+
+              {/* Patient Search */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-green-600" />
+                  Buscar Paciente Existente
+                </h3>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre, apellido o teléfono..."
+                      value={patientSearch}
+                      onChange={(e) => setPatientSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {patients
+                      .filter(patient => 
+                        patient.nombre?.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        patient.apellidos?.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                        patient.tel_movil?.includes(patientSearch)
+                      )
+                      .slice(0, 10)
+                      .map(patient => (
+                        <div
+                          key={patient.id}
+                          onClick={() => startConversationWithPatient(patient)}
+                          className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium text-gray-900 group-hover:text-blue-600">
+                                {patient.nombre} {patient.apellidos}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {patient.tel_movil || 'Sin teléfono registrado'}
+                              </p>
+                              {patient.num_pac && (
+                                <p className="text-xs text-gray-500">#{patient.num_pac}</p>
+                              )}
+                            </div>
+                            {patient.tel_movil ? (
+                              <MessageCircle className="w-5 h-5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            ) : (
+                              <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center">
+                                <X className="w-3 h-3 text-gray-500" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {patients.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <p>No se encontraron pacientes</p>
+                        <p className="text-sm">Cargando lista de pacientes...</p>
+                      </div>
+                    )}
+                    
+                    {patients.length > 0 && patientSearch && 
+                     patients.filter(patient => 
+                       patient.nombre?.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                       patient.apellidos?.toLowerCase().includes(patientSearch.toLowerCase()) ||
+                       patient.tel_movil?.includes(patientSearch)
+                     ).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Search className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <p>No se encontraron pacientes con "{patientSearch}"</p>
+                        <p className="text-sm">Intenta con otro término de búsqueda</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Note */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <MessageCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Cómo funciona:</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Los pacientes también pueden iniciarte una conversación enviándote un mensaje</li>
+                      <li>Las conversaciones aparecerán automáticamente en tu lista</li>
+                      <li>Puedes buscar pacientes registrados para contactarlos directamente</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
