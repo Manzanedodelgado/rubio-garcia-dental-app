@@ -19,6 +19,21 @@ const WhatsAppModuleSimple = () => {
   const [pendingMessages, setPendingMessages] = useState([]); // Messages waiting to be confirmed
   const messagesEndRef = useRef(null); // Reference for auto-scroll
 
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  };
+
+  // Auto-scroll effect
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   // Check connection status
   const checkConnection = async () => {
     try {
