@@ -480,6 +480,176 @@ class DenAppAPITester:
         )
         return success
 
+    # Google Sheets Integration Tests
+    def test_agenda_connection(self):
+        """Test Google Sheets API connection"""
+        success, response = self.run_test(
+            "Google Sheets Connection Test",
+            "GET",
+            "agenda/test-connection",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Connection Status: {response.get('status')}")
+            print(f"   Message: {response.get('message')}")
+            if response.get('worksheet_info'):
+                info = response['worksheet_info']
+                print(f"   Worksheet: {info.get('title')}")
+                print(f"   Rows: {info.get('row_count')}, Cols: {info.get('col_count')}")
+        return success
+
+    def test_agenda_get_all(self):
+        """Test getting all agenda items"""
+        success, response = self.run_test(
+            "Get All Agenda Items",
+            "GET",
+            "agenda/",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Total items: {response.get('total_count', 0)}")
+            print(f"   Last sync: {response.get('last_sync_time', 'Never')}")
+            print(f"   Sync status: {response.get('sync_status', 'Unknown')}")
+            if response.get('items'):
+                print(f"   Sample item: {response['items'][0].get('nombre', 'N/A')} {response['items'][0].get('apellidos', 'N/A')}")
+        return success
+
+    def test_agenda_sync_status(self):
+        """Test agenda synchronization status"""
+        success, response = self.run_test(
+            "Agenda Sync Status",
+            "GET",
+            "agenda/sync/status",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Last sync: {response.get('last_sync_time', 'Never')}")
+            print(f"   Sync in progress: {response.get('sync_in_progress', False)}")
+            print(f"   Scheduler running: {response.get('scheduler_running', False)}")
+            print(f"   Total items: {response.get('total_items', 0)}")
+            print(f"   Successful syncs: {response.get('successful_syncs', 0)}")
+            print(f"   Failed syncs: {response.get('failed_syncs', 0)}")
+            if response.get('last_error'):
+                print(f"   Last error: {response.get('last_error')}")
+        return success
+
+    def test_agenda_manual_sync(self):
+        """Test manual agenda synchronization trigger"""
+        success, response = self.run_test(
+            "Manual Agenda Sync",
+            "POST",
+            "agenda/sync",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Sync status: {response.get('status')}")
+            print(f"   Message: {response.get('message')}")
+        return success
+
+    def test_agenda_search(self):
+        """Test agenda search functionality"""
+        success, response = self.run_test(
+            "Agenda Search",
+            "GET",
+            "agenda/search?q=test",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Search results: {response.get('total_count', 0)} items")
+            print(f"   Message: {response.get('message', 'N/A')}")
+        return success
+
+    def test_agenda_stats(self):
+        """Test agenda statistics"""
+        success, response = self.run_test(
+            "Agenda Statistics",
+            "GET",
+            "agenda/stats",
+            200,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Total appointments: {response.get('total_appointments', 0)}")
+            print(f"   Today appointments: {response.get('today_appointments', 0)}")
+            print(f"   Upcoming appointments: {response.get('upcoming_appointments', 0)}")
+            if response.get('status_distribution'):
+                print(f"   Status distribution: {response['status_distribution']}")
+            if response.get('doctor_distribution'):
+                print(f"   Doctor distribution: {response['doctor_distribution']}")
+        return success
+
+    def test_agenda_create_item(self):
+        """Test creating a new agenda item"""
+        from datetime import datetime, date, time
+        
+        # Create realistic test data
+        test_agenda_item = {
+            "num_pac": "PAC9999",
+            "nombre": "María",
+            "apellidos": "González Ruiz",
+            "tel_movil": "666123456",
+            "fecha": "2025-01-15",
+            "hora": "10:30",
+            "estado_cita": "Programada",
+            "tratamiento": "Limpieza dental",
+            "odontologo": "Dr. García",
+            "notas": "Paciente de prueba para testing API",
+            "duracion": "30"
+        }
+        
+        success, response = self.run_test(
+            "Create Agenda Item",
+            "POST",
+            "agenda/",
+            200,
+            data=test_agenda_item,
+            token=self.admin_token
+        )
+        if success:
+            self.created_agenda_id = response.get('id')
+            print(f"   Created agenda item ID: {self.created_agenda_id}")
+            print(f"   Patient: {response.get('nombre')} {response.get('apellidos')}")
+            print(f"   Date: {response.get('fecha')} at {response.get('hora')}")
+        return success
+
+    def test_agenda_update_item(self):
+        """Test updating an agenda item"""
+        if not hasattr(self, 'created_agenda_id') or not self.created_agenda_id:
+            print("❌ No agenda item ID available for update test")
+            return False
+            
+        updated_data = {
+            "nombre": "María Carmen",
+            "apellidos": "González Ruiz",
+            "tel_movil": "666123456",
+            "fecha": "2025-01-15",
+            "hora": "11:00",
+            "estado_cita": "Confirmada",
+            "tratamiento": "Limpieza dental + Revisión",
+            "odontologo": "Dr. García",
+            "notas": "Paciente de prueba - ACTUALIZADO",
+            "duracion": "45"
+        }
+        
+        success, response = self.run_test(
+            "Update Agenda Item",
+            "PUT",
+            f"agenda/{self.created_agenda_id}",
+            200,
+            data=updated_data,
+            token=self.admin_token
+        )
+        if success:
+            print(f"   Updated patient: {response.get('nombre')} {response.get('apellidos')}")
+            print(f"   New time: {response.get('hora')}")
+            print(f"   New status: {response.get('estado_cita')}")
+        return success
+
 def main():
     print("🏥 DenApp Control - Backend API Testing")
     print("=" * 50)
