@@ -14,6 +14,7 @@ let sock = null
 let qrCode = null
 let connectionStatus = 'disconnected'
 let qrCodeExpiry = null
+let keepaliveInterval = null
 
 async function initWhatsApp() {
     try {
