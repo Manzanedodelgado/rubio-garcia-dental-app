@@ -249,39 +249,63 @@ class GoogleSheetsService:
             self.sync_stats['last_error'] = str(e)
             raise GoogleSheetsError(f"Failed to append agenda item: {e}")
     
+    @retry_with_backoff(max_retries=3)
+    def update_agenda_item(self, row_index: int, agenda_item):
+        """Update a specific agenda item by row index."""
+        try:
+            if not self.worksheet:
+                self._get_worksheet()
+            
+            # Prepare row data
+            row_data = agenda_item.to_sheets_row()
+            
+            # Calculate range (row_index + 2 because we have headers and 1-based indexing)
+            start_col = 'A'
+            end_col = chr(65 + len(row_data) - 1)  # Convert to letter (A=65)
+            range_name = f'{start_col}{row_index + 2}:{end_col}{row_index + 2}'
+            
+            # Update the specific row
+            self.worksheet.update(range_name, [row_data])
+            
+            logger.info(f"Successfully updated agenda item at row {row_index + 2}")
+            self.sync_stats['successful_syncs'] += 1
+            
+            return True
+        
+        except Exception as e:
+            logger.error(f"Failed to update agenda item: {e}")
+            self.sync_stats['failed_syncs'] += 1
+            self.sync_stats['last_error'] = str(e)
+            raise GoogleSheetsError(f"Failed to update agenda item: {e}")
+
     async def update_appointment(self, appointment_id: str, appointment_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update an existing appointment in the Google Sheet"""
+        from models.agenda import AgendaItem
+        
         try:
-            if not self.client:
-                # Mock update for demo
-                return appointment_data
+            if not self.worksheet:
+                self._get_worksheet()
             
-            worksheet = self.client.open_by_key(self.spreadsheet_id).worksheet(self.sheet_name)
-            
-            # Find the row to update
-            registro_col = self.columns.index('Registro') + 1
-            cell = worksheet.find(appointment_id, in_column=registro_col)
-            
-            if not cell:
+            # Find the row to update by searching for the registro
+            cells = self.worksheet.findall(appointment_id)
+            if not cells:
                 raise ValueError(f"Appointment with ID {appointment_id} not found")
             
+            # Get the first match (assuming it's in the Registro column)
+            cell = cells[0]
             row_num = cell.row
             
-            # Update the row data
-            for i, col in enumerate(self.columns):
-                if col.lower() in appointment_data:
-                    value = appointment_data[col.lower()]
-                    if col in ['Fecha', 'FechaAlta'] and isinstance(value, (date, datetime)):
-                        value = value.strftime('%Y-%m-%d')
-                    elif col == 'Hora' and isinstance(value, time):
-                        value = value.strftime('%H:%M')
-                    worksheet.update_cell(row_num, i + 1, str(value))
+            # Create AgendaItem from appointment_data
+            agenda_item = AgendaItem(**appointment_data)
             
-            # Return updated data
-            updated_row = worksheet.row_values(row_num)
-            updated_record = dict(zip(self.columns, updated_row))
+            # Update using our method (row_num - 2 because our method adds 2)
+            success = self.update_agenda_item(row_num - 2, agenda_item)
             
-            return self._format_appointment_data(updated_record)
+            if success:
+                return agenda_item.dict()
+            else:
+                raise Exception("Failed to update appointment")
+                
         except Exception as e:
             logger.error(f"Error updating appointment in Google Sheets: {str(e)}")
             raise
