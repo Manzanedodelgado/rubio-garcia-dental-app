@@ -411,14 +411,40 @@ const WhatsAppModuleSimple = () => {
   };
 
   // Start manual conversation
-  const startManualConversation = () => {
+  const startManualConversation = async () => {
     if (!manualPhone.trim()) {
       alert('Por favor ingresa un número de teléfono');
       return;
     }
 
     const cleanPhone = manualPhone.replace(/\D/g, ''); // Remove non-digits
-    const displayName = manualName.trim() || cleanPhone;
+    let displayName = manualName.trim() || cleanPhone;
+    
+    // Check if this phone number exists in patients
+    try {
+      const authToken = localStorage.getItem('token');
+      const patientsResponse = await axios.get(`${API}/patients`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
+      
+      // Look for existing patient with this phone number
+      const existingPatient = patientsResponse.data.find(patient => {
+        if (!patient.tel_movil) return false;
+        const patientPhone = patient.tel_movil.replace(/\D/g, '');
+        return patientPhone === cleanPhone || patient.tel_movil === cleanPhone || patient.tel_movil === manualPhone;
+      });
+      
+      if (existingPatient) {
+        displayName = `${existingPatient.nombre} ${existingPatient.apellidos}`;
+        console.log('✅ Found existing patient:', displayName, 'for phone:', cleanPhone);
+      } else {
+        console.log('ℹ️ No existing patient found for phone:', cleanPhone);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error checking existing patients:', error);
+      // Continue with manual name if API fails
+    }
     
     const newChat = {
       id: cleanPhone,
@@ -429,11 +455,14 @@ const WhatsAppModuleSimple = () => {
       unread: false
     };
 
-    // Add to conversations if not exists
+    // Add to conversations if not exists, or update existing
     setConversations(prev => {
-      const exists = prev.find(c => c.id === newChat.id);
-      if (exists) {
-        return prev;
+      const existingIndex = prev.findIndex(c => c.id === newChat.id || c.phone === cleanPhone);
+      if (existingIndex >= 0) {
+        // Update existing conversation with correct name
+        const updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], contact: displayName };
+        return updated;
       }
       return [newChat, ...prev];
     });
@@ -444,7 +473,7 @@ const WhatsAppModuleSimple = () => {
     setManualPhone('');
     setManualName('');
     
-    console.log('✅ New manual conversation started with:', cleanPhone);
+    console.log('✅ New manual conversation started with:', displayName, '(', cleanPhone, ')');
   };
 
   // Delete conversation
