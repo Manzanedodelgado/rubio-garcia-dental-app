@@ -397,89 +397,16 @@ class GoogleSheetsService:
                 'message': f'Connection failed: {e}',
                 'worksheet_info': None
             }
-    
-    def _format_appointment_data(self, record: Dict[str, Any]) -> Dict[str, Any]:
-        """Format appointment data from Google Sheets format to API format"""
-        formatted = {}
-        for i, col in enumerate(self.columns):
-            key = col.lower()
-            value = record.get(col, '')
-            
-            # Handle date formatting
-            if col in ['Fecha', 'FechaAlta'] and value:
-                try:
-                    if isinstance(value, str):
-                        formatted[key] = value
-                    else:
-                        formatted[key] = str(value)
-                except:
-                    formatted[key] = str(value)
-            # Handle time formatting
-            elif col == 'Hora' and value:
-                try:
-                    if isinstance(value, str):
-                        formatted[key] = value
-                    else:
-                        formatted[key] = str(value)
-                except:
-                    formatted[key] = str(value)
-            else:
-                formatted[key] = str(value) if value else ''
-        
-        return formatted
-    
-    def _get_mock_appointments(self) -> List[Dict[str, Any]]:
-        """Return mock appointment data for demo purposes"""
-        return [
-            {
-                'registro': 1,
-                'citmod': 'CM001',
-                'fechaalta': '2024-01-15',
-                'numpac': 'PAC0001',
-                'apellidos': 'García López',
-                'nombre': 'María',
-                'telmovil': '666123456',
-                'fecha': '2024-12-20',
-                'hora': '09:00',
-                'estadocita': 'PROGRAMADA',
-                'tratamiento': 'Limpieza dental',
-                'odontologo': 'Dr. Rubio García',
-                'notas': 'Primera consulta',
-                'duracion': '30'
-            },
-            {
-                'registro': 2,
-                'citmod': 'CM002',
-                'fechaalta': '2024-01-16',
-                'numpac': 'PAC0002',
-                'apellidos': 'Martínez Ruiz',
-                'nombre': 'Carlos',
-                'telmovil': '666789012',
-                'fecha': '2024-12-20',
-                'hora': '10:30',
-                'estadocita': 'CONFIRMADA',
-                'tratamiento': 'Empaste',
-                'odontologo': 'Dr. Rubio García',
-                'notas': 'Caries en molar derecho',
-                'duracion': '45'
-            },
-            {
-                'registro': 3,
-                'citmod': 'CM003',
-                'fechaalta': '2024-01-17',
-                'numpac': 'PAC0003',
-                'apellidos': 'Fernández Silva',
-                'nombre': 'Ana',
-                'telmovil': '666345678',
-                'fecha': '2024-12-21',
-                'hora': '16:00',
-                'estadocita': 'PROGRAMADA',
-                'tratamiento': 'Ortodoncia - Revisión',
-                'odontologo': 'Dr. Rubio García',
-                'notas': 'Control mensual de brackets',
-                'duracion': '20'
-            }
-        ]
 
-# Global service instance
-google_sheets_service = GoogleSheetsService()
+# Global instance
+sheets_service = None
+
+def get_sheets_service():
+    """Get global Google Sheets service instance."""
+    global sheets_service
+    if sheets_service is None:
+        sheets_service = GoogleSheetsService()
+    return sheets_service
+
+# For backward compatibility
+google_sheets_service = get_sheets_service()
