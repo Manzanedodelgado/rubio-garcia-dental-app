@@ -173,6 +173,12 @@ const WhatsAppConnection = ({ onConnectionChange }) => {
       setConnectedUser(status.user);
       setLastUpdate(new Date());
 
+      // For JMD user, persist connection status
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser === 'JMD') {
+        localStorage.setItem('whatsapp_status', status.status);
+      }
+
       if (qrData.qr && (status.status === 'connecting' || status.status === 'disconnected')) {
         setQrCode(qrData.qr);
         setQrExpiry(qrData.expires_at);
