@@ -400,11 +400,24 @@ const WhatsAppModuleSimple = () => {
                           }`}
                         >
                           <p className="text-sm">{message.message}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.type === 'outgoing' ? 'text-blue-100' : 'text-gray-500'
-                          }`}>
-                            {message.timestamp.toLocaleTimeString()}
-                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className={`text-xs ${
+                              message.type === 'outgoing' ? 'text-blue-100' : 'text-gray-500'
+                            }`}>
+                              {message.timestamp.toLocaleTimeString()}
+                            </p>
+                            {message.type === 'outgoing' && (
+                              <span className={`text-xs ml-2 ${
+                                message.status === 'sending' ? 'text-blue-200' :
+                                message.status === 'sent' ? 'text-blue-100' :
+                                message.status === 'error' ? 'text-red-200' : 'text-blue-100'
+                              }`}>
+                                {message.status === 'sending' ? '⏳' :
+                                 message.status === 'sent' ? '✓' :
+                                 message.status === 'error' ? '✗' : '✓'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
