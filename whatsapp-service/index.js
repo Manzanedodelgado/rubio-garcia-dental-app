@@ -72,6 +72,12 @@ async function initWhatsApp() {
                 
                 connectionStatus = 'disconnected'
                 
+                // Clear keepalive interval
+                if (keepaliveInterval) {
+                    clearInterval(keepaliveInterval)
+                    keepaliveInterval = null
+                }
+                
                 if (shouldReconnect) {
                     console.log('🔄 Reconectando en 5 segundos...')
                     setTimeout(initWhatsApp, 5000)
