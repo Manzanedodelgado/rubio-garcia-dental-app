@@ -208,35 +208,46 @@ class GoogleSheetsService:
     
     async def create_appointment(self, appointment_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new appointment in the Google Sheet"""
+        from models.agenda import AgendaItem
+        
         try:
-            if not self.client:
-                # Mock creation for demo
-                appointment_data['registro'] = len(self._get_mock_appointments()) + 1
-                appointment_data['fecha_alta'] = datetime.now().isoformat()
-                return appointment_data
+            # Convert appointment_data to AgendaItem
+            agenda_item = AgendaItem(**appointment_data)
             
-            worksheet = self.client.open_by_key(self.spreadsheet_id).worksheet(self.sheet_name)
-            
-            # Prepare row data according to column order
-            row_data = []
-            for col in self.columns:
-                value = appointment_data.get(col.lower(), '')
-                if col in ['Fecha', 'FechaAlta'] and isinstance(value, (date, datetime)):
-                    value = value.strftime('%Y-%m-%d')
-                elif col == 'Hora' and isinstance(value, time):
-                    value = value.strftime('%H:%M')
-                row_data.append(str(value))
-            
-            worksheet.append_row(row_data)
-            
-            # Get the new record ID
-            all_records = worksheet.get_all_records()
-            new_record = all_records[-1] if all_records else {}
-            
-            return self._format_appointment_data(new_record)
+            # Use the append method
+            success = self.append_agenda_item(agenda_item)
+            if success:
+                return agenda_item.dict()
+            else:
+                raise Exception("Failed to create appointment")
+                
         except Exception as e:
             logger.error(f"Error creating appointment in Google Sheets: {str(e)}")
             raise
+    
+    @retry_with_backoff(max_retries=3)
+    def append_agenda_item(self, agenda_item):
+        """Append a single agenda item to the worksheet."""
+        try:
+            if not self.worksheet:
+                self._get_worksheet()
+            
+            # Prepare row data
+            row_data = agenda_item.to_sheets_row()
+            
+            # Append to the worksheet
+            self.worksheet.append_row(row_data)
+            
+            logger.info(f"Successfully appended agenda item: {agenda_item.nombre} {agenda_item.apellidos}")
+            self.sync_stats['successful_syncs'] += 1
+            
+            return True
+        
+        except Exception as e:
+            logger.error(f"Failed to append agenda item: {e}")
+            self.sync_stats['failed_syncs'] += 1
+            self.sync_stats['last_error'] = str(e)
+            raise GoogleSheetsError(f"Failed to append agenda item: {e}")
     
     async def update_appointment(self, appointment_id: str, appointment_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update an existing appointment in the Google Sheet"""
