@@ -230,13 +230,17 @@ const WhatsAppModuleSimple = () => {
       console.log('✅ Message sent and saved successfully');
     } catch (error) {
       console.error('❌ Error sending message:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
+      console.error('❌ Error status:', error.response?.status);
       
       // Update message status to error
       setMessages(prev => prev.map(m => 
         m.id === tempMessage.id ? { ...m, status: 'error' } : m
       ));
       
-      alert('Error al enviar mensaje');
+      // Show detailed error to user
+      const errorMsg = error.response?.data?.detail || error.message || 'Error desconocido';
+      alert(`Error al enviar mensaje: ${errorMsg}`);
     }
   };
 
