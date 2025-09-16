@@ -428,6 +428,55 @@ const WhatsAppModuleSimple = () => {
     console.log('✅ New manual conversation started with:', cleanPhone);
   };
 
+  // Delete conversation
+  const deleteConversation = async (conversationId) => {
+    try {
+      const authToken = localStorage.getItem('token');
+      
+      // Delete all messages for this conversation
+      await axios.delete(`${API}/whatsapp/messages/conversation/${conversationId}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
+
+      // Remove from local state
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // If it was the selected chat, clear selection
+      if (selectedChat && selectedChat.id === conversationId) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
+
+      setShowDeleteConfirm(null);
+      setShowOptionsMenu(null);
+      console.log('✅ Conversation deleted:', conversationId);
+      
+    } catch (error) {
+      console.error('❌ Error deleting conversation:', error);
+      alert('Error al eliminar la conversación');
+    }
+  };
+
+  // Delete single message
+  const deleteMessage = async (messageId) => {
+    try {
+      const authToken = localStorage.getItem('token');
+      
+      await axios.delete(`${API}/whatsapp/messages/${messageId}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
+
+      // Remove from local state
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      
+      console.log('✅ Message deleted:', messageId);
+      
+    } catch (error) {
+      console.error('❌ Error deleting message:', error);
+      alert('Error al eliminar el mensaje');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
