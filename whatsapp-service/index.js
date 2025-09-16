@@ -16,6 +16,26 @@ let connectionStatus = 'disconnected'
 let qrCodeExpiry = null
 let keepaliveInterval = null
 
+function startKeepalive() {
+    // Clear any existing keepalive
+    if (keepaliveInterval) {
+        clearInterval(keepaliveInterval)
+    }
+    
+    // Send keepalive every 30 seconds
+    keepaliveInterval = setInterval(async () => {
+        if (sock && connectionStatus === 'connected') {
+            try {
+                // Send a simple presence update to keep connection alive
+                await sock.sendPresenceUpdate('available')
+                console.log('💓 Keepalive enviado')
+            } catch (error) {
+                console.log('❌ Error en keepalive:', error.message)
+            }
+        }
+    }, 30000)
+}
+
 async function initWhatsApp() {
     try {
         console.log('🚀 Iniciando servicio de WhatsApp...')
