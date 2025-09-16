@@ -124,13 +124,27 @@ const WhatsAppModuleSimple = () => {
         const key = msg.phone_number;
         const cleanKey = key.replace(/\D/g, '');
         
-        // Use patient name if available, otherwise use contact_name or phone number
+        // Use patient name if available - try multiple formats
         let displayName = msg.contact_name || key;
-        if (patientNamesMap.has(cleanKey)) {
-          displayName = patientNamesMap.get(cleanKey);
-        } else if (patientNamesMap.has(key)) {
+        
+        // Try to find patient name in different formats
+        if (patientNamesMap.has(key)) {
           displayName = patientNamesMap.get(key);
+        } else if (patientNamesMap.has(cleanKey)) {
+          displayName = patientNamesMap.get(cleanKey);
+        } else {
+          // Try with/without country code
+          const withCountry = '34' + cleanKey;
+          const withoutCountry = cleanKey.startsWith('34') ? cleanKey.substring(2) : cleanKey;
+          
+          if (patientNamesMap.has(withCountry)) {
+            displayName = patientNamesMap.get(withCountry);
+          } else if (patientNamesMap.has(withoutCountry)) {
+            displayName = patientNamesMap.get(withoutCountry);
+          }
         }
+        
+        console.log(`📞 Phone: ${key} -> Name: ${displayName}`);
         
         if (!conversationsMap.has(key)) {
           conversationsMap.set(key, {
@@ -146,7 +160,7 @@ const WhatsAppModuleSimple = () => {
           const conv = conversationsMap.get(key);
           conv.messageCount++;
           // Update display name if we found a better one
-          if (displayName !== key && conv.contact === key) {
+          if (displayName !== key && (conv.contact === key || conv.contact.includes(key))) {
             conv.contact = displayName;
           }
           if (new Date(msg.timestamp) > conv.timestamp) {
