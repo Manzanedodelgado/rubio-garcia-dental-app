@@ -69,8 +69,15 @@ const WhatsAppModule = () => {
   }, [messages]);
 
   const handleConnectionChange = (status, user) => {
+    console.log('🔄 Connection status changed:', status, user);
     setConnectionStatus(status);
     setConnectedUser(user);
+    
+    // For JMD, always maintain connected state if backend is responsive
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser === 'JMD' && status === 'connected') {
+      localStorage.setItem('whatsapp_connected', 'true');
+    }
     
     // Close connection dialog when connected
     if (status === 'connected') {
