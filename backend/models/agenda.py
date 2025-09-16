@@ -97,6 +97,13 @@ class AgendaItem(BaseModel):
         cleaned = str(v).replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
         return cleaned if cleaned else None
     
+    @validator('duracion', 'registro', 'num_pac', 'apellidos', 'nombre', 'tratamiento', 'odontologo', 'notas', pre=True)
+    def convert_to_string(cls, v):
+        """Convert numeric and other types to string."""
+        if v is None or v == '':
+            return None
+        return str(v) if v is not None else None
+    
     def to_sheets_row(self) -> List[str]:
         """Convert to list format for Google Sheets row."""
         return [
