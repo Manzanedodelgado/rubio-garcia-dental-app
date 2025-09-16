@@ -316,7 +316,9 @@ const WhatsAppModuleSimple = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">{selectedChat.contact}</h3>
-                      <p className="text-sm text-gray-500">{selectedChat.phone}</p>
+                      <p className="text-sm text-gray-500">
+                        {selectedChat.phone} • {messages.length} mensajes
+                      </p>
                     </div>
                   </div>
                 </div>
