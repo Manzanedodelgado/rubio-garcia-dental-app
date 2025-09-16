@@ -1129,9 +1129,27 @@ logger = logging.getLogger(__name__)
 async def startup_event():
     await init_default_data()
     scheduler.start()
+    
+    # Start Google Sheets agenda synchronization
+    try:
+        from services.agenda_sync_service import start_agenda_sync
+        start_agenda_sync()
+        logger.info("Google Sheets agenda synchronization started")
+    except Exception as e:
+        logger.error(f"Failed to start agenda synchronization: {e}")
+    
     logger.info("DenApp Control started successfully")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     scheduler.shutdown()
+    
+    # Stop agenda synchronization
+    try:
+        from services.agenda_sync_service import stop_agenda_sync
+        stop_agenda_sync()
+        logger.info("Google Sheets agenda synchronization stopped")
+    except Exception as e:
+        logger.error(f"Failed to stop agenda synchronization: {e}")
+    
     client.close()
