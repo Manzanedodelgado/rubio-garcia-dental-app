@@ -309,6 +309,13 @@ app.get('/health', (req, res) => {
 // Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('🛑 Cerrando servicio de WhatsApp...')
+    
+    // Clear keepalive interval
+    if (keepaliveInterval) {
+        clearInterval(keepaliveInterval)
+        keepaliveInterval = null
+    }
+    
     if (sock) {
         await sock.logout()
     }
