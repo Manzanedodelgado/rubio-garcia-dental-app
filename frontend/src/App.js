@@ -52,6 +52,7 @@ const Login = () => {
       const response = await axios.post(`${API}/auth/login`, credentials);
       const { token, role, username, permissions } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem('currentUser', username); // Store for WhatsApp connection persistence
       login({ username, role, token, permissions });
     } catch (error) {
       setError('Credenciales incorrectas');
